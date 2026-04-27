@@ -1,21 +1,10 @@
-import { createContext, useContext, useRef, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { RadarPane } from './RadarPane';
+import { MapSync } from './MapSyncContext';
+import type { MapSyncContext } from './MapSyncContext';
 import type { RadarProductId } from '../../types/radar';
 import type { Map as LeafletMap } from 'leaflet';
-
-/** Shared registry for syncing multiple Leaflet map instances */
-interface MapSyncContext {
-  register: (index: number, map: LeafletMap) => void;
-  unregister: (index: number) => void;
-  syncFrom: (sourceIndex: number) => void;
-}
-
-const MapSync = createContext<MapSyncContext | null>(null);
-
-export function useMapSync() {
-  return useContext(MapSync);
-}
 
 export function MapLayout() {
   const { state, dispatch } = useApp();

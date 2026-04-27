@@ -7,7 +7,7 @@ import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
 import { MapClickHandler } from '../../hooks/useMapClick';
-import { useMapSync } from './MapLayout';
+import { useMapSync } from './MapSyncContext';
 import { RADAR_PRODUCTS } from '../../types/radar';
 import type { RadarProductId } from '../../types/radar';
 import type { CSSProperties } from 'react';
@@ -40,6 +40,12 @@ const dropdownStyle: CSSProperties = {
 function PaneSyncHandler({ paneIndex }: { paneIndex: number }) {
   const map = useMap();
   const sync = useMapSync();
+
+  // Leaflet needs to recalculate size when placed in a grid cell
+  useEffect(() => {
+    const timer = setTimeout(() => map.invalidateSize(), 100);
+    return () => clearTimeout(timer);
+  }, [map]);
 
   useEffect(() => {
     if (!sync) return;
