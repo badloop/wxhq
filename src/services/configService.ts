@@ -15,6 +15,7 @@ export function extractConfig(state: AppState): PersistableConfig {
     iembotRooms: state.iembotConfig.rooms,
     animationSpeed: state.radarState.animationSpeed,
     frameCount: state.radarState.frameCount,
+    radarProduct: state.radarState.radarProduct,
     mapPoints: state.mapPoints,
   };
 }

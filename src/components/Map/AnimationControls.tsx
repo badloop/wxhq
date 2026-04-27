@@ -1,4 +1,7 @@
 import { useApp } from '../../context/AppContext';
+import { RADAR_PRODUCTS } from '../../types/radar';
+import { fetchRadarFrames } from '../../services/radarApi';
+import type { RadarProductId } from '../../types/radar';
 import type { CSSProperties } from 'react';
 
 const bar: CSSProperties = {
@@ -33,7 +36,7 @@ const frameCounts = [5, 10, 15, 20];
 
 export function AnimationControls() {
   const { state, dispatch } = useApp();
-  const { frames, animationSpeed, frameCount, currentFrame, isAnimating, selectedSite } = state.radarState;
+  const { frames, animationSpeed, frameCount, currentFrame, isAnimating, selectedSite, radarProduct } = state.radarState;
 
   // For display: show site frames if site selected, otherwise mosaic frame info
   const displayFrames = selectedSite ? frames : [];
@@ -48,6 +51,18 @@ export function AnimationControls() {
     const max = selectedSite ? frames.length : 12;
     if (max === 0) return;
     dispatch({ type: 'SET_CURRENT_FRAME', payload: ((currentFrame + dir) % max + max) % max });
+  };
+
+  const handleProductChange = async (product: RadarProductId) => {
+    dispatch({ type: 'SET_RADAR_PRODUCT', payload: product });
+    if (selectedSite) {
+      try {
+        const newFrames = await fetchRadarFrames(selectedSite.id, frameCount, product);
+        dispatch({ type: 'SET_FRAMES', payload: { frames: newFrames } });
+      } catch (err) {
+        console.error(`Failed to fetch ${product} frames:`, err);
+      }
+    }
   };
 
   return (
@@ -78,6 +93,19 @@ export function AnimationControls() {
       >
         {frameCounts.map(n => <option key={n} value={n}>{n} frames</option>)}
       </select>
+
+      {selectedSite && (
+        <select
+          value={radarProduct}
+          onChange={e => handleProductChange(e.target.value as RadarProductId)}
+          style={{ ...btn, padding: '4px 8px' }}
+          title="Radar product"
+        >
+          {RADAR_PRODUCTS.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      )}
 
       <span style={{ color: '#00f0ff', fontSize: 12, minWidth: 180, textAlign: 'center' }}>
         {selectedSite

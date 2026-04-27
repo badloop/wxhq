@@ -6,7 +6,7 @@ import { useRadarAnimation } from '../../hooks/useRadarAnimation';
 export function SingleSiteRadar() {
   const { state, dispatch } = useApp();
   const site = state.radarState.selectedSite;
-  const { frames, animationSpeed, isAnimating, currentFrame } = state.radarState;
+  const { frames, animationSpeed, isAnimating, currentFrame, radarProduct } = state.radarState;
 
   const radarGroup = state.layerGroups.find(g => g.id === 'radar');
   const radarOpacity = radarGroup?.opacity ?? 0.7;
@@ -34,10 +34,11 @@ export function SingleSiteRadar() {
       <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
         {frames.map((frame, i) => (
           <TileLayer
-            key={`ridge-${site.id}-${i}`}
+            key={`ridge-${site.id}-${radarProduct}-${i}`}
             url={frame.url}
             opacity={i === currentFrame ? radarOpacity : 0}
-            maxZoom={12}
+            maxZoom={18}
+            maxNativeZoom={16}
             pane="radar-pane"
           />
         ))}
@@ -48,11 +49,12 @@ export function SingleSiteRadar() {
   return (
     <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
       <TileLayer
-        url={`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-N0B-0/{z}/{x}/{y}.png`}
+        url={`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-${radarProduct}-0/{z}/{x}/{y}.png`}
         opacity={radarOpacity}
-        maxZoom={12}
-        attribution={`RIDGE ${site.id} &copy; IEM`}
-        key={`ridge-${site.id}-live`}
+        maxZoom={18}
+        maxNativeZoom={16}
+        attribution={`RIDGE ${site.id} ${radarProduct} &copy; IEM`}
+        key={`ridge-${site.id}-${radarProduct}-live`}
         pane="radar-pane"
       />
     </Pane>

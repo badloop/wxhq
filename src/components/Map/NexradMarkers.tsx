@@ -11,7 +11,7 @@ export function NexradMarkers() {
   const handleClick = async (site: NexradSite) => {
     dispatch({ type: 'SELECT_SITE', payload: site });
     try {
-      const frames = await fetchRadarFrames(site.id, state.radarState.frameCount);
+      const frames = await fetchRadarFrames(site.id, state.radarState.frameCount, state.radarState.radarProduct);
       dispatch({ type: 'SET_FRAMES', payload: { frames } });
     } catch (err) {
       console.error(`Failed to fetch radar frames for ${site.id}:`, err);

@@ -1,4 +1,4 @@
-import type { NexradSite, RadarState } from '../types/radar';
+import type { NexradSite, RadarState, RadarProductId } from '../types/radar';
 import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 import type { MapPoint } from '../types/mapPoints';
@@ -24,6 +24,7 @@ export type AppAction =
   | { type: 'SET_ANIMATING'; payload: boolean }
   | { type: 'SET_ANIMATION_SPEED'; payload: number }
   | { type: 'SET_FRAME_COUNT'; payload: number }
+  | { type: 'SET_RADAR_PRODUCT'; payload: RadarProductId }
   | { type: 'TOGGLE_OVERLAY'; payload: string }
   | { type: 'SET_OVERLAY_FILL_MODE'; payload: { id: string; fillMode: 'fill' | 'outline' } }
   | { type: 'OPEN_SIDEBAR'; payload: [number, number] }
@@ -50,6 +51,7 @@ export interface PersistableConfig {
   iembotRooms: string[];
   animationSpeed: number;
   frameCount: number;
+  radarProduct: RadarProductId;
   mapPoints: MapPoint[];
 }
 
@@ -78,6 +80,7 @@ export const initialState: AppState = {
     isAnimating: false,
     animationSpeed: 500,
     frameCount: 10,
+    radarProduct: 'N0B',
   },
   overlays: defaultOverlays,
   overlayGeoJSON: {},
@@ -109,6 +112,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, radarState: { ...state.radarState, animationSpeed: action.payload } };
     case 'SET_FRAME_COUNT':
       return { ...state, radarState: { ...state.radarState, frameCount: action.payload } };
+    case 'SET_RADAR_PRODUCT':
+      return { ...state, radarState: { ...state.radarState, radarProduct: action.payload, frames: [], currentFrame: 0, isAnimating: false } };
     case 'TOGGLE_OVERLAY':
       return { ...state, overlays: state.overlays.map(o => o.id === action.payload ? { ...o, enabled: !o.enabled } : o) };
     case 'SET_OVERLAY_FILL_MODE':
@@ -167,6 +172,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.frameCount !== undefined) {
         newState.radarState = { ...newState.radarState, frameCount: cfg.frameCount };
+      }
+      if (cfg.radarProduct) {
+        newState.radarState = { ...newState.radarState, radarProduct: cfg.radarProduct };
       }
       if (cfg.overlays) {
         // Merge saved overlay settings into default overlays

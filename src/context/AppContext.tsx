@@ -32,7 +32,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.iembotConfig !== state.iembotConfig ||
       prev.mapPoints !== state.mapPoints ||
       prev.radarState.animationSpeed !== state.radarState.animationSpeed ||
-      prev.radarState.frameCount !== state.radarState.frameCount;
+      prev.radarState.frameCount !== state.radarState.frameCount ||
+      prev.radarState.radarProduct !== state.radarState.radarProduct;
 
     prevStateRef.current = state;
 
