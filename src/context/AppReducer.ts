@@ -6,7 +6,7 @@ export interface AppState {
   radarState: RadarState;
   overlays: OverlayConfig[];
   overlayGeoJSON: Record<string, GeoJSON.FeatureCollection>;
-  layerGroups: LayerGroup[];  // ordered array — position = z-order (last = top)
+  layerGroups: LayerGroup[];
   sidebarOpen: boolean;
   sidebarLatLon: [number, number] | null;
   iembotMessages: IEMBotMessage[];
@@ -23,6 +23,7 @@ export type AppAction =
   | { type: 'SET_ANIMATION_SPEED'; payload: number }
   | { type: 'SET_FRAME_COUNT'; payload: number }
   | { type: 'TOGGLE_OVERLAY'; payload: string }
+  | { type: 'SET_OVERLAY_FILL_MODE'; payload: { id: string; fillMode: 'fill' | 'outline' } }
   | { type: 'OPEN_SIDEBAR'; payload: [number, number] }
   | { type: 'CLOSE_SIDEBAR' }
   | { type: 'ADD_IEMBOT_MSG'; payload: IEMBotMessage }
@@ -33,7 +34,35 @@ export type AppAction =
   | { type: 'ADD_OVERLAY'; payload: OverlayConfig }
   | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } }
   | { type: 'SET_GROUP_OPACITY'; payload: { id: string; opacity: number } }
-  | { type: 'MOVE_GROUP'; payload: { id: string; direction: 'up' | 'down' } };
+  | { type: 'MOVE_GROUP'; payload: { id: string; direction: 'up' | 'down' } }
+  | { type: 'LOAD_CONFIG'; payload: Partial<PersistableConfig> };
+
+/** The subset of state that gets persisted to YAML */
+export interface PersistableConfig {
+  overlays: Array<{ id: string; enabled: boolean; fillMode: 'fill' | 'outline' }>;
+  customOverlays: OverlayConfig[];
+  layerGroups: LayerGroup[];
+  iembotRooms: string[];
+  animationSpeed: number;
+  frameCount: number;
+}
+
+export const defaultOverlays: OverlayConfig[] = [
+  { id: 'day1', name: 'SPC Day 1 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day1otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc', fillMode: 'fill' },
+  { id: 'day2', name: 'SPC Day 2 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day2otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc', fillMode: 'fill' },
+  { id: 'day3', name: 'SPC Day 3 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day3otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc', fillMode: 'fill' },
+  { id: 'warnings', name: 'NWS Warnings', url: 'https://api.weather.gov/alerts/active?status=actual&message_type=alert', enabled: false, refreshInterval: 30000, color: '#ff0000', category: 'nws', fillMode: 'fill' },
+  { id: 'watches', name: 'NWS Watches', url: 'https://api.weather.gov/alerts/active?event=Tornado%20Watch,Severe%20Thunderstorm%20Watch&status=actual&message_type=alert', enabled: false, refreshInterval: 60000, color: '#ffff00', category: 'nws', fillMode: 'fill' },
+  { id: 'mcd', name: 'Mesoscale Discussions', url: 'spc-mcd-custom', enabled: false, refreshInterval: 120000, color: '#4444ff', category: 'mcd', fillMode: 'fill' },
+];
+
+export const defaultLayerGroups: LayerGroup[] = [
+  { id: 'spc', name: 'SPC Outlooks', opacity: 1 },
+  { id: 'mcd', name: 'Mesoscale Disc.', opacity: 1 },
+  { id: 'radar', name: 'Radar', opacity: 0.7 },
+  { id: 'nws', name: 'NWS', opacity: 1 },
+  { id: 'custom', name: 'Custom', opacity: 1 },
+];
 
 export const initialState: AppState = {
   radarState: {
@@ -44,23 +73,9 @@ export const initialState: AppState = {
     animationSpeed: 500,
     frameCount: 10,
   },
-  overlays: [
-    { id: 'day1', name: 'SPC Day 1 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day1otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc' },
-    { id: 'day2', name: 'SPC Day 2 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day2otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc' },
-    { id: 'day3', name: 'SPC Day 3 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day3otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc' },
-    { id: 'warnings', name: 'NWS Warnings', url: 'https://api.weather.gov/alerts/active?status=actual&message_type=alert', enabled: false, refreshInterval: 30000, color: '#ff0000', category: 'nws' },
-    { id: 'watches', name: 'NWS Watches', url: 'https://api.weather.gov/alerts/active?event=Tornado%20Watch,Severe%20Thunderstorm%20Watch&status=actual&message_type=alert', enabled: false, refreshInterval: 60000, color: '#ffff00', category: 'nws' },
-    { id: 'mcd', name: 'Mesoscale Discussions', url: 'spc-mcd-custom', enabled: false, refreshInterval: 120000, color: '#4444ff', category: 'mcd' },
-  ],
+  overlays: defaultOverlays,
   overlayGeoJSON: {},
-  // Order = z-order. Last in array renders on top.
-  layerGroups: [
-    { id: 'spc', name: 'SPC Outlooks', opacity: 1 },
-    { id: 'mcd', name: 'Mesoscale Disc.', opacity: 1 },
-    { id: 'radar', name: 'Radar', opacity: 0.7 },
-    { id: 'nws', name: 'NWS', opacity: 1 },
-    { id: 'custom', name: 'Custom', opacity: 1 },
-  ],
+  layerGroups: defaultLayerGroups,
   sidebarOpen: false,
   sidebarLatLon: null,
   iembotMessages: [],
@@ -89,6 +104,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, radarState: { ...state.radarState, frameCount: action.payload } };
     case 'TOGGLE_OVERLAY':
       return { ...state, overlays: state.overlays.map(o => o.id === action.payload ? { ...o, enabled: !o.enabled } : o) };
+    case 'SET_OVERLAY_FILL_MODE':
+      return { ...state, overlays: state.overlays.map(o => o.id === action.payload.id ? { ...o, fillMode: action.payload.fillMode } : o) };
     case 'OPEN_SIDEBAR':
       return { ...state, sidebarOpen: true, sidebarLatLon: action.payload };
     case 'CLOSE_SIDEBAR':
@@ -125,6 +142,41 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (swapIdx < 0 || swapIdx >= groups.length) return state;
       [groups[idx], groups[swapIdx]] = [groups[swapIdx], groups[idx]];
       return { ...state, layerGroups: groups };
+    }
+    case 'LOAD_CONFIG': {
+      const cfg = action.payload;
+      let newState = { ...state };
+
+      if (cfg.layerGroups) {
+        newState.layerGroups = cfg.layerGroups;
+      }
+      if (cfg.iembotRooms) {
+        newState.iembotConfig = { ...newState.iembotConfig, rooms: cfg.iembotRooms };
+      }
+      if (cfg.animationSpeed !== undefined) {
+        newState.radarState = { ...newState.radarState, animationSpeed: cfg.animationSpeed };
+      }
+      if (cfg.frameCount !== undefined) {
+        newState.radarState = { ...newState.radarState, frameCount: cfg.frameCount };
+      }
+      if (cfg.overlays) {
+        // Merge saved overlay settings into default overlays
+        newState.overlays = newState.overlays.map(o => {
+          const saved = cfg.overlays!.find(s => s.id === o.id);
+          if (saved) return { ...o, enabled: saved.enabled, fillMode: saved.fillMode };
+          return o;
+        });
+      }
+      if (cfg.customOverlays) {
+        // Add custom overlays that don't already exist
+        for (const custom of cfg.customOverlays) {
+          if (!newState.overlays.some(o => o.id === custom.id)) {
+            newState.overlays = [...newState.overlays, custom];
+          }
+        }
+      }
+
+      return newState;
     }
     default:
       return state;

@@ -181,25 +181,54 @@ export function OverlayManager() {
             return (
               <LayerGroupRow key={group.id} group={group} isFirst={isFirst} isLast={isLast}>
                 {overlays.map(o => (
-                  <label key={o.id} style={{
+                  <div key={o.id} style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    color: '#e0e0e0',
-                    fontSize: 12,
                     marginBottom: 3,
-                    cursor: 'pointer',
                     paddingLeft: 20,
                   }}>
-                    <input
-                      type="checkbox"
-                      checked={o.enabled}
-                      onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: o.id })}
-                      style={{ accentColor: o.color }}
-                    />
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: o.color, display: 'inline-block', flexShrink: 0 }} />
-                    {o.name}
-                  </label>
+                    <label style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      color: '#e0e0e0',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      flex: 1,
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={o.enabled}
+                        onChange={() => dispatch({ type: 'TOGGLE_OVERLAY', payload: o.id })}
+                        style={{ accentColor: o.color }}
+                      />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: o.color, display: 'inline-block', flexShrink: 0 }} />
+                      {o.name}
+                    </label>
+                    {o.enabled && (
+                      <button
+                        onClick={() => dispatch({
+                          type: 'SET_OVERLAY_FILL_MODE',
+                          payload: { id: o.id, fillMode: o.fillMode === 'fill' ? 'outline' : 'fill' },
+                        })}
+                        title={o.fillMode === 'fill' ? 'Switch to outline only' : 'Switch to filled'}
+                        style={{
+                          background: 'none',
+                          border: `1px solid ${o.fillMode === 'fill' ? 'rgba(0,240,255,0.3)' : 'rgba(0,240,255,0.15)'}`,
+                          color: o.fillMode === 'fill' ? '#00f0ff' : '#606070',
+                          fontSize: 10,
+                          padding: '1px 5px',
+                          borderRadius: 3,
+                          cursor: 'pointer',
+                          fontFamily: 'monospace',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {o.fillMode === 'fill' ? '■' : '□'}
+                      </button>
+                    )}
+                  </div>
                 ))}
                 {group.id === 'custom' && <CustomOverlayInput />}
               </LayerGroupRow>

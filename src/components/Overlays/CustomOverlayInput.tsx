@@ -53,6 +53,7 @@ export function CustomOverlayInput() {
         refreshInterval: 300000,
         color,
         category: 'custom',
+        fillMode: 'fill',
       },
     });
     setUrl('');

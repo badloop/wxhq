@@ -6,6 +6,7 @@ export interface OverlayConfig {
   refreshInterval: number;
   color: string;
   category: 'spc' | 'nws' | 'mcd' | 'custom';
+  fillMode: 'fill' | 'outline';
 }
 
 export interface LayerGroup {

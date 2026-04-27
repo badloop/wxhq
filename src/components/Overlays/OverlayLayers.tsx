@@ -52,13 +52,16 @@ function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOp
 
   const style = (feature?: GeoJSON.Feature): PathOptions => {
     const props = feature?.properties;
+    const noFill = config.fillMode === 'outline';
+
     if (props?.stroke || props?.fill) {
       return {
         color: props.stroke || config.color,
         weight: 2,
         fillColor: props.fill || config.color,
-        fillOpacity: 0.25 * groupOpacity,
+        fillOpacity: noFill ? 0 : 0.25 * groupOpacity,
         opacity: groupOpacity,
+        fill: !noFill,
       };
     }
     if (config.category === 'nws' && props?.event) {
@@ -67,18 +70,19 @@ function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOp
       if (evt.includes('tornado')) c = '#ff69b4';
       else if (evt.includes('thunderstorm')) c = '#ff0000';
       else if (evt.includes('flood')) c = '#00cc00';
-      return { color: c, weight: 2, fillColor: c, fillOpacity: 0.2 * groupOpacity, opacity: groupOpacity };
+      return { color: c, weight: 2, fillColor: c, fillOpacity: noFill ? 0 : 0.2 * groupOpacity, opacity: groupOpacity, fill: !noFill };
     }
     return {
       color: config.color,
       weight: 2,
       fillColor: config.color,
-      fillOpacity: 0.15 * groupOpacity,
+      fillOpacity: noFill ? 0 : 0.15 * groupOpacity,
       opacity: groupOpacity,
+      fill: !noFill,
     };
   };
 
-  return <GeoJSON key={`${config.id}-${revision}-${groupOpacity}`} data={geojson} style={style} />;
+  return <GeoJSON key={`${config.id}-${revision}-${groupOpacity}-${config.fillMode}`} data={geojson} style={style} />;
 }
 
 /** Ensures a custom Leaflet pane exists with the given name and zIndex */
