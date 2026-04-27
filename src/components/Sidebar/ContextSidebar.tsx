@@ -86,6 +86,23 @@ const sectionHeader: CSSProperties = {
   borderBottom: '1px solid rgba(0, 240, 255, 0.2)',
 };
 
+/** Collapsible section wrapper */
+function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div
+        style={{ ...sectionHeader, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        onClick={() => setOpen(!open)}
+      >
+        <span>{title}</span>
+        <span style={{ fontSize: 9, color: '#606070' }}>{open ? '▼' : '▶'}</span>
+      </div>
+      {open && children}
+    </div>
+  );
+}
+
 export function ContextSidebar() {
   const { state, dispatch } = useApp();
   const { sidebarOpen, sidebarLatLon, overlays, overlayGeoJSON } = state;
@@ -165,8 +182,7 @@ export function ContextSidebar() {
       <div style={scrollArea}>
         <SidebarErrorBoundary>
         {/* Hodograph section */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={sectionHeader}>Hodograph</div>
+        <Section title="Hodograph">
           {loading && (
             <div style={{ color: '#a0a0b0', fontSize: BASE_SIZE, fontFamily: FONT, textAlign: 'center', padding: 20 }}>
               Loading sounding...
@@ -187,14 +203,13 @@ export function ContextSidebar() {
                 : 'No sounding data available'}
             </div>
           )}
-        </div>
+        </Section>
 
         {/* Sounding parameters */}
         {hasValidSounding && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={sectionHeader}>Parameters</div>
+          <Section title="Parameters">
             <SoundingParams levels={sounding!.levels} />
-          </div>
+          </Section>
         )}
 
         {/* Overlay details */}

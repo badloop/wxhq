@@ -99,7 +99,7 @@ function Field({ label, value, multiline }: { label: string; value: string; mult
 
 /** NWS Alert detail (watches, warnings) */
 function NWSDetail({ feature, color }: { feature: GeoJSON.Feature; color: string }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const p = feature.properties || {};
 
   const title = p.event || 'NWS Alert';
@@ -158,7 +158,7 @@ function NWSDetail({ feature, color }: { feature: GeoJSON.Feature; color: string
 
 /** SPC Outlook detail */
 function SPCDetail({ feature, color }: { feature: GeoJSON.Feature; color: string }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const p = feature.properties || {};
 
   const title = p.LABEL2 || p.LABEL || 'SPC Outlook';
@@ -207,7 +207,7 @@ function SPCDetail({ feature, color }: { feature: GeoJSON.Feature; color: string
 
 /** MCD detail */
 function MCDDetail({ feature, color }: { feature: GeoJSON.Feature; color: string }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const p = feature.properties || {};
 
   const title = p.id || `MD #${p.number}`;
@@ -280,7 +280,7 @@ function FeatureDetail({ feature, config }: { feature: GeoJSON.Feature; config: 
 
 /** Generic detail for custom overlays — show all properties */
 function GenericDetail({ feature, color }: { feature: GeoJSON.Feature; color: string }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const p = feature.properties || {};
   const keys = Object.keys(p).filter(k => typeof p[k] === 'string' || typeof p[k] === 'number');
   const title = p.name || p.NAME || p.title || p.LABEL || 'Feature';
