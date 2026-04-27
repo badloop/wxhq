@@ -174,12 +174,19 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
     // One-time: scan persisted messages for MCD polygons on startup
     if (!mcdScannedRef.current) {
       mcdScannedRef.current = true;
-      for (const msg of state.iembotMessages) {
-        if (msg.productId.includes('SWOMCD')) {
-          fetchMCDFromMessage(msg.message).then(poly => {
-            if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
-          });
-        }
+      const mcdMsgs = state.iembotMessages.filter(m => m.productId.includes('SWOMCD'));
+      console.log(`[wxhq] MCD scan: ${state.iembotMessages.length} messages, ${mcdMsgs.length} SWOMCD`);
+      for (const msg of mcdMsgs) {
+        fetchMCDFromMessage(msg.message).then(poly => {
+          if (poly) {
+            console.log(`[wxhq] MCD polygon loaded: ${poly.id}`, poly.coordinates.length, 'points');
+            dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
+          } else {
+            console.warn(`[wxhq] MCD polygon parse returned null for message seqnum=${msg.seqnum}`);
+          }
+        }).catch(err => {
+          console.error(`[wxhq] MCD polygon fetch failed for seqnum=${msg.seqnum}:`, err);
+        });
       }
     }
 
