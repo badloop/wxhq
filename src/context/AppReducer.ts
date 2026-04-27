@@ -191,13 +191,25 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
     case 'CLEAR_IEMBOT':
-      return { ...state, iembotMessages: [], iembotUnread: 0, iembotDismissed: [] };
-    case 'DISMISS_IEMBOT_MSG':
+      return { ...state, iembotMessages: [], iembotUnread: 0, iembotDismissed: [], mcdPolygons: [] };
+    case 'DISMISS_IEMBOT_MSG': {
+      const dismissed = state.iembotMessages.find(m => m.seqnum === action.payload);
+      let mcdPolygons = state.mcdPolygons;
+      // If dismissing an MCD message, remove its polygon
+      if (dismissed && dismissed.productId.includes('SWOMCD')) {
+        const mdMatch = dismissed.message.match(/md(\d+)\.html/);
+        if (mdMatch) {
+          const mdId = `MD${mdMatch[1]}`;
+          mcdPolygons = mcdPolygons.filter(p => p.id !== mdId);
+        }
+      }
       return {
         ...state,
         iembotMessages: state.iembotMessages.filter(m => m.seqnum !== action.payload),
         iembotDismissed: [...state.iembotDismissed, action.payload].slice(-500),
+        mcdPolygons,
       };
+    }
     case 'TOGGLE_IEMBOT_PANEL':
       return { ...state, iembotPanelOpen: !state.iembotPanelOpen, iembotUnread: state.iembotPanelOpen ? state.iembotUnread : 0 };
     case 'MARK_IEMBOT_READ':
