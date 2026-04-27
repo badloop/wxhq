@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { NexradMarkers } from './NexradMarkers';
 import { NexradMosaic } from './NexradMosaic';
 import { SingleSiteRadar } from './SingleSiteRadar';
@@ -6,6 +7,7 @@ import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
 import { MapClickHandler } from '../../hooks/useMapClick';
+import { useMapSync } from './MapLayout';
 import { RADAR_PRODUCTS } from '../../types/radar';
 import type { RadarProductId } from '../../types/radar';
 import type { CSSProperties } from 'react';
@@ -34,6 +36,29 @@ const dropdownStyle: CSSProperties = {
   pointerEvents: 'auto',
 };
 
+/** Inner component that has access to useMap() */
+function PaneSyncHandler({ paneIndex }: { paneIndex: number }) {
+  const map = useMap();
+  const sync = useMapSync();
+
+  useEffect(() => {
+    if (!sync) return;
+    sync.register(paneIndex, map);
+
+    const onMove = () => sync.syncFrom(paneIndex);
+    map.on('move', onMove);
+    map.on('zoom', onMove);
+
+    return () => {
+      map.off('move', onMove);
+      map.off('zoom', onMove);
+      sync.unregister(paneIndex);
+    };
+  }, [map, paneIndex, sync]);
+
+  return null;
+}
+
 export function RadarPane({ paneIndex, radarProduct, onProductChange, showControls = true }: RadarPaneProps) {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -43,6 +68,7 @@ export function RadarPane({ paneIndex, radarProduct, onProductChange, showContro
         style={{ width: '100%', height: '100%' }}
         zoomControl={false}
       >
+        <PaneSyncHandler paneIndex={paneIndex} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
