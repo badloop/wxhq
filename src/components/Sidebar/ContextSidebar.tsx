@@ -207,22 +207,55 @@ export function ContextSidebar() {
   const { state, dispatch } = useApp();
   const { sidebarOpen, sidebarLatLon } = state;
   const mobile = useIsMobile();
-  const width = mobile ? window.innerWidth : SIDEBAR_WIDTH;
-  const barHeight = mobile ? 72 : 56; // mobile bar is taller (two rows)
+  const width = mobile ? '100vw' : SIDEBAR_WIDTH;
+  const barHeight = mobile ? 72 : 56;
 
   return (
     <>
-      {/* Drawer handle */}
-      <div
-        style={{
-          ...drawerHandle,
-          right: sidebarOpen ? width : 0,
-          bottom: barHeight,
-        }}
-        onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
-        title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-      >
-        {sidebarOpen ? '›' : '‹'}
+      {/* Drawer handle — hidden on mobile when sidebar is open (full-screen overlay) */}
+      {!(mobile && sidebarOpen) && (
+        <div
+          style={{
+            ...drawerHandle,
+            right: sidebarOpen ? SIDEBAR_WIDTH : 0,
+            bottom: barHeight,
+          }}
+          onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
+          title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        >
+          {sidebarOpen ? '›' : '‹'}
+        </div>
+      )}
+
+      {/* Sidebar panel */}
+      <div style={{
+        ...panelBase,
+        width: mobile ? '100vw' : SIDEBAR_WIDTH,
+        bottom: barHeight,
+        transform: sidebarOpen ? 'translateX(0)' : `translateX(${mobile ? '100vw' : `${SIDEBAR_WIDTH}px`})`,
+      }}>
+        {/* Mobile close bar */}
+        {mobile && (
+          <div style={{
+            display: 'flex', justifyContent: 'flex-end', padding: '8px 12px',
+            borderBottom: '1px solid rgba(0, 240, 255, 0.15)', flexShrink: 0,
+          }}>
+            <button
+              onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
+              style={{
+                background: 'none', border: '1px solid rgba(255,0,170,0.3)',
+                color: '#ff00aa', padding: '4px 12px', borderRadius: 4,
+                fontSize: 13, cursor: 'pointer', fontFamily: 'monospace',
+              }}
+            >✕ Close</button>
+          </div>
+        )}
+        <div style={scrollArea}>
+          <LayersPanel />
+          {sidebarLatLon && (
+            <LocationContext lat={sidebarLatLon[0]} lon={sidebarLatLon[1]} />
+          )}
+        </div>
       </div>
 
       {/* Sidebar panel */}
@@ -230,7 +263,7 @@ export function ContextSidebar() {
         ...panelBase,
         width,
         bottom: barHeight,
-        transform: sidebarOpen ? 'translateX(0)' : `translateX(${width}px)`,
+        transform: sidebarOpen ? 'translateX(0)' : `translateX(${mobile ? '100vw' : `${SIDEBAR_WIDTH}px`})`,
       }}>
         <div style={scrollArea}>
           <LayersPanel />
