@@ -5,7 +5,7 @@ export interface OverlayConfig {
   enabled: boolean;
   refreshInterval: number;
   color: string;
-  category: 'spc' | 'nws' | 'mcd' | 'custom';
+  category: 'spc' | 'nws' | 'mcd' | 'warnings' | 'watches' | 'custom';
   fillMode: 'fill' | 'outline';
 }
 

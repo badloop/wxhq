@@ -35,17 +35,19 @@ export async function fetchActiveWatches(): Promise<FeatureCollection> {
     }
 
     const segments: WatchSegment[] = [];
+    const currentYear = new Date().getFullYear().toString();
     for (const f of data.features) {
       const vtecs: string[] = f.properties?.parameters?.VTEC || [];
       for (const v of vtecs) {
-        const m = v.match(/(\d{4})-O-\w+-K(\w{3})-(\w{2})-(\w)-(\d{4})/);
+        // VTEC format: /O.ACTION.KWFO.PH.SIG.ETN.startZ-endZ/
+        const m = v.match(/\/O\.\w+\.K(\w{3})\.(\w{2})\.(\w)\.(\d{4})\./);
         if (m) {
           segments.push({
-            year: m[1],
-            wfo: m[2],
-            phenomena: m[3],
-            significance: m[4],
-            etn: m[5],
+            year: currentYear,
+            wfo: m[1],
+            phenomena: m[2],
+            significance: m[3],
+            etn: m[4],
             event: f.properties?.event || '',
             headline: f.properties?.headline || '',
           });
