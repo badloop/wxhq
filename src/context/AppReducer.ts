@@ -30,6 +30,7 @@ export type AppAction =
   | { type: 'CLOSE_SIDEBAR' }
   | { type: 'ADD_IEMBOT_MSG'; payload: IEMBotMessage }
   | { type: 'CLEAR_IEMBOT' }
+  | { type: 'DISMISS_IEMBOT_MSG'; payload: number }
   | { type: 'TOGGLE_IEMBOT_PANEL' }
   | { type: 'MARK_IEMBOT_READ' }
   | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
@@ -128,6 +129,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     }
     case 'CLEAR_IEMBOT':
       return { ...state, iembotMessages: [], iembotUnread: 0 };
+    case 'DISMISS_IEMBOT_MSG':
+      return { ...state, iembotMessages: state.iembotMessages.filter(m => m.seqnum !== action.payload) };
     case 'TOGGLE_IEMBOT_PANEL':
       return { ...state, iembotPanelOpen: !state.iembotPanelOpen, iembotUnread: state.iembotPanelOpen ? state.iembotUnread : 0 };
     case 'MARK_IEMBOT_READ':

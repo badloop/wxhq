@@ -165,8 +165,8 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
       </div>
 
       {/* Messages */}
-      <div style={{ overflowY: 'auto', flex: 1 }}>
-        <MessageList messages={state.iembotMessages} filter={filter} />
+      <div style={{ overflowY: 'auto', height: 400 }}>
+        <MessageList messages={state.iembotMessages} filter={filter} dispatch={dispatch} />
       </div>
 
       {/* Add room */}

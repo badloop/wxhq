@@ -1,8 +1,12 @@
+import { useEffect, useRef } from 'react';
 import type { IEMBotMessage } from '../../types/iembot';
+import type { Dispatch } from 'react';
+import type { AppAction } from '../../context/AppReducer';
 
 interface MessageListProps {
   messages: IEMBotMessage[];
   filter: string;
+  dispatch: Dispatch<AppAction>;
 }
 
 const FONT = "monospace";
@@ -26,23 +30,30 @@ function toCentral(utcStr: string): string {
 /** Strip XML namespace wrapper and sanitize script tags */
 function sanitizeHtml(raw: string): string {
   let html = raw;
-  // Remove <body xmlns='...'> wrapper
   html = html.replace(/<body[^>]*>/gi, '').replace(/<\/body>/gi, '');
-  // Strip script tags
   html = html.replace(/<script[\s\S]*?<\/script>/gi, '');
-  // Make links open in new tab
   html = html.replace(/<a\s/gi, '<a target="_blank" rel="noopener noreferrer" ');
   return html;
 }
 
-export function MessageList({ messages, filter }: MessageListProps) {
+export function MessageList({ messages, filter, dispatch }: MessageListProps) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Reverse: messages come in newest-first, we want newest at bottom
+  const chronological = [...messages].reverse();
+
   const filtered = filter
-    ? messages.filter(
+    ? chronological.filter(
         (m) =>
           m.message.toLowerCase().includes(filter.toLowerCase()) ||
           m.productId.toLowerCase().includes(filter.toLowerCase())
       )
-    : messages;
+    : chronological;
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [filtered.length]);
 
   if (filtered.length === 0) {
     return (
@@ -75,18 +86,38 @@ export function MessageList({ messages, filter }: MessageListProps) {
             <span style={{ fontFamily: FONT, fontSize: BASE_SIZE - 1, color: '#00f0ff' }}>
               {toCentral(msg.timestamp)}
             </span>
-            <span
-              style={{
-                fontSize: BASE_SIZE - 2,
-                color: '#888',
-                fontFamily: FONT,
-                background: 'rgba(0, 240, 255, 0.05)',
-                padding: '1px 6px',
-                borderRadius: 3,
-              }}
-            >
-              {msg.room}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span
+                style={{
+                  fontSize: BASE_SIZE - 2,
+                  color: '#888',
+                  fontFamily: FONT,
+                  background: 'rgba(0, 240, 255, 0.05)',
+                  padding: '1px 6px',
+                  borderRadius: 3,
+                }}
+              >
+                {msg.room}
+              </span>
+              <button
+                onClick={() => dispatch({ type: 'DISMISS_IEMBOT_MSG', payload: msg.seqnum })}
+                title="Dismiss"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#606070',
+                  cursor: 'pointer',
+                  fontFamily: FONT,
+                  fontSize: 12,
+                  padding: 0,
+                  lineHeight: 1,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#ff00aa')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#606070')}
+              >
+                ×
+              </button>
+            </div>
           </div>
           <div
             style={{
@@ -105,6 +136,7 @@ export function MessageList({ messages, filter }: MessageListProps) {
           )}
         </div>
       ))}
+      <div ref={bottomRef} />
       <style>{`
         .iembot-msg a {
           color: #00f0ff !important;
