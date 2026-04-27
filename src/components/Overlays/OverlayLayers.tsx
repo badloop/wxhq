@@ -4,6 +4,7 @@ import type { PathOptions } from 'leaflet';
 import type { OverlayConfig } from '../../types/overlays';
 import { useApp } from '../../context/AppContext';
 import { fetchWithRetry } from '../../services/fetchClient';
+import { fetchActiveMCDs } from '../../services/mcdApi';
 
 function OverlayLayer({ config }: { config: OverlayConfig }) {
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
@@ -15,8 +16,14 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
 
     const load = async () => {
       try {
-        const res = await fetchWithRetry(config.url);
-        const data = await res.json();
+        let data: GeoJSON.FeatureCollection;
+        if (config.id === 'mcd') {
+          // MCDs require special fetching — scrape SPC active MD pages for LAT...LON polygons
+          data = await fetchActiveMCDs();
+        } else {
+          const res = await fetchWithRetry(config.url);
+          data = await res.json();
+        }
         if (!cancelled) { setGeojson(data); setRevision(r => r + 1); }
       } catch (err) {
         console.error(`Overlay fetch failed for ${config.id}:`, err);

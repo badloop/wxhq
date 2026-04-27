@@ -1,5 +1,4 @@
 import { useApp } from '../../context/AppContext';
-import { useRadarAnimation } from '../../hooks/useRadarAnimation';
 import type { CSSProperties } from 'react';
 
 const bar: CSSProperties = {
@@ -34,18 +33,30 @@ const frameCounts = [5, 10, 15, 20];
 
 export function AnimationControls() {
   const { state, dispatch } = useApp();
-  const { frames, animationSpeed, frameCount } = state.radarState;
-  const { currentFrame, isPlaying, play, pause, stepForward, stepBack } = useRadarAnimation(frames, animationSpeed);
+  const { frames, animationSpeed, frameCount, currentFrame, isAnimating, selectedSite } = state.radarState;
 
-  const ts = frames[currentFrame]?.timestamp ?? '—';
+  // For display: show site frames if site selected, otherwise mosaic frame info
+  const displayFrames = selectedSite ? frames : [];
+  const totalFrames = selectedSite ? frames.length : 12; // 12 mosaic history steps
+  const ts = selectedSite
+    ? (displayFrames[currentFrame]?.timestamp ?? '—')
+    : (isAnimating ? `${55 - currentFrame * 5} min ago` : 'Current');
+
+  const togglePlay = () => dispatch({ type: 'SET_ANIMATING', payload: !isAnimating });
+
+  const step = (dir: 1 | -1) => {
+    const max = selectedSite ? frames.length : 12;
+    if (max === 0) return;
+    dispatch({ type: 'SET_CURRENT_FRAME', payload: ((currentFrame + dir) % max + max) % max });
+  };
 
   return (
     <div style={bar}>
-      <button style={btn} onClick={stepBack} title="Step back">⏮</button>
-      <button style={btn} onClick={isPlaying ? pause : play}>
-        {isPlaying ? '⏸' : '▶'}
+      <button style={btn} onClick={() => step(-1)} title="Step back">⏮</button>
+      <button style={btn} onClick={togglePlay}>
+        {isAnimating ? '⏸' : '▶'}
       </button>
-      <button style={btn} onClick={stepForward} title="Step forward">⏭</button>
+      <button style={btn} onClick={() => step(1)} title="Step forward">⏭</button>
 
       <label style={{ color: '#a0a0b0', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
         Speed
@@ -68,8 +79,11 @@ export function AnimationControls() {
         {frameCounts.map(n => <option key={n} value={n}>{n} frames</option>)}
       </select>
 
-      <span style={{ color: '#00f0ff', fontSize: 12, minWidth: 140, textAlign: 'center' }}>
-        {frames.length > 0 ? `${currentFrame + 1}/${frames.length} — ${ts}` : 'No frames loaded'}
+      <span style={{ color: '#00f0ff', fontSize: 12, minWidth: 180, textAlign: 'center' }}>
+        {selectedSite
+          ? (frames.length > 0 ? `${currentFrame + 1}/${frames.length} — ${ts}` : `${selectedSite.id} — No frames`)
+          : (isAnimating ? `${currentFrame + 1}/${totalFrames} — ${ts}` : 'Mosaic — Current')
+        }
       </span>
     </div>
   );
