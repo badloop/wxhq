@@ -11,7 +11,7 @@ interface OverlayDetailsProps {
 }
 
 // Base font: 13px monospace, scales well on HiDPI
-const FONT = "'Share Tech Mono', monospace";
+const FONT = "monospace";
 const BASE_SIZE = 13;
 
 function extractPolygons(feature: GeoJSON.Feature): [number, number][][] {

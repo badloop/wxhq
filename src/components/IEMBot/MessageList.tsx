@@ -5,7 +5,7 @@ interface MessageListProps {
   filter: string;
 }
 
-const FONT = "'Share Tech Mono', monospace";
+const FONT = "monospace";
 const BASE_SIZE = 13;
 
 /** Convert UTC timestamp string to US Central */

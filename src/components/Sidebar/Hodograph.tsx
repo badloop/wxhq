@@ -52,7 +52,7 @@ export function Hodograph({ levels, sfcHeight }: HodographProps) {
     // Grid rings
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
     ctx.lineWidth = 1;
-    ctx.font = '10px "Share Tech Mono", monospace';
+    ctx.font = '10px monospace';
     ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
     ctx.textAlign = 'center';
 
@@ -73,7 +73,7 @@ export function Hodograph({ levels, sfcHeight }: HodographProps) {
 
     // Axis labels
     ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
-    ctx.font = '11px "Share Tech Mono", monospace';
+    ctx.font = '11px monospace';
     ctx.fillText('N', CENTER, 12);
     ctx.fillText('S', CENTER, SIZE - 4);
     ctx.textAlign = 'left';
@@ -86,7 +86,7 @@ export function Hodograph({ levels, sfcHeight }: HodographProps) {
     if (wl.length < 2) {
       ctx.fillStyle = 'rgba(0, 240, 255, 0.5)';
       ctx.textAlign = 'center';
-      ctx.font = '12px "Share Tech Mono", monospace';
+      ctx.font = '12px monospace';
       ctx.fillText('No wind data', CENTER, CENTER);
       return;
     }
@@ -113,7 +113,7 @@ export function Hodograph({ levels, sfcHeight }: HodographProps) {
     }
 
     // Height markers
-    ctx.font = '9px "Share Tech Mono", monospace';
+    ctx.font = '9px monospace';
     ctx.textAlign = 'left';
     for (const hm of heightMarkers) {
       const targetH = sfcHeight + hm;
@@ -141,7 +141,7 @@ export function Hodograph({ levels, sfcHeight }: HodographProps) {
 
     // Legend
     const legendY = SIZE - 12;
-    ctx.font = '9px "Share Tech Mono", monospace';
+    ctx.font = '9px monospace';
     const labels = ['0-1', '1-3', '3-6', '6-9', '9+'];
     const colors = ['#ff4444', '#39ff14', '#00f0ff', '#ff00aa', '#888888'];
     let lx = 8;

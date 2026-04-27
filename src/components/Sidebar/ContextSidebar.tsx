@@ -8,7 +8,7 @@ import { Hodograph } from './Hodograph';
 import { SoundingParams } from './SoundingParams';
 import { OverlayDetails } from './OverlayDetails';
 
-const FONT = "'Share Tech Mono', monospace";
+const FONT = "monospace";
 const BASE_SIZE = 13;
 const MAX_STATION_DIST_KM = 200;
 

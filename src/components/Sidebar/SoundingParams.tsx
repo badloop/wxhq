@@ -6,7 +6,7 @@ interface SoundingParamsProps {
   levels: SoundingProfileLevel[];
 }
 
-const FONT = "'Share Tech Mono', monospace";
+const FONT = "monospace";
 const BASE_SIZE = 13;
 
 const grid: CSSProperties = {
