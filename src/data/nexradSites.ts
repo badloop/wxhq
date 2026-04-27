@@ -165,5 +165,4 @@ export const nexradSites: NexradSite[] = [
   { id: 'KCRI', name: 'Norman (NSSL)', lat: 35.2358, lon: -97.4611, state: 'OK' },
   { id: 'KLGX', name: 'Langley Hill', lat: 47.1167, lon: -124.1069, state: 'WA' },
   { id: 'KFOE', name: 'Topeka (FAA)', lat: 38.9583, lon: -95.6264, state: 'KS' },
-  { id: 'KNKX', name: 'San Diego', lat: 32.9189, lon: -117.0419, state: 'CA' },
 ];

@@ -176,7 +176,6 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
       mcdScannedRef.current = true;
       const mcdMsgs = state.iembotMessages.filter(m => m.productId.includes('SWOMCD'));
       console.log(`[wxhq] MCD scan: ${state.iembotMessages.length} messages, ${mcdMsgs.length} SWOMCD`);
-      console.log(`[wxhq] MCD scan productIds:`, state.iembotMessages.map(m => ({ seq: m.seqnum, pid: m.productId, msg: m.message.substring(0, 120) })));
       for (const msg of mcdMsgs) {
         fetchMCDFromMessage(msg.message).then(poly => {
           if (poly) {
