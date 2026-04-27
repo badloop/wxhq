@@ -59,6 +59,21 @@ async function fetchMCDPolygon(messageHtml: string): Promise<IEMBotPolygon | nul
   }
 }
 
+// Cache the NWS active alerts response (refreshed at most every 30s)
+let alertsCache: { data: any; fetchedAt: number } | null = null;
+const ALERTS_CACHE_TTL = 30000;
+
+async function getActiveAlerts(): Promise<any> {
+  const now = Date.now();
+  if (alertsCache && now - alertsCache.fetchedAt < ALERTS_CACHE_TTL) {
+    return alertsCache.data;
+  }
+  const res = await fetchWithRetry('https://api.weather.gov/alerts/active?status=actual', {}, 1);
+  const data = await res.json();
+  alertsCache = { data, fetchedAt: now };
+  return data;
+}
+
 /** Fetch VTEC warning polygon from NWS API */
 async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | null> {
   // Extract IEM VTEC URL: /vtec/f/YYYY-O-ACTION-KWFO-PH-SIG-ETN_timestamp
@@ -70,38 +85,26 @@ async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | nu
   const [, , , wfo, phenomena, significance, etn] = vtecMatch;
   const id = `vtec-${wfo}-${phenomena}-${significance}-${etn}`;
 
-  // Map phenomena codes to human-readable event names for NWS API query
-  const eventMap: Record<string, string> = {
-    'TO': 'Tornado Warning',
-    'SV': 'Severe Thunderstorm Warning',
-    'FF': 'Flash Flood Warning',
-    'MA': 'Special Marine Warning',
-    'FL': 'Flood Warning',
-    'FA': 'Areal Flood Warning',
-    'EW': 'Extreme Wind Warning',
-  };
-
-  const eventName = eventMap[phenomena];
-  if (!eventName) return null; // Unknown phenomena — skip
+  // Only warnings (significance W) have polygon geometry in NWS API.
+  // Watches (A), advisories (Y), and statements (S) use county/zone areas without polygons.
+  if (significance !== 'W') return null;
 
   // Build the IEM VTEC URL for reference
-  const iemUrl = `https://mesonet.agron.iastate.edu/vtec/f/${vtecMatch[0].split("'")[0]}`;
+  const iemUrl = `https://mesonet.agron.iastate.edu/vtec/#${vtecMatch[0].split("'")[0].split('/vtec/f/')[1] || ''}`;
 
   try {
-    // Query NWS API for active alerts from this WFO with this event type
-    const nwsUrl = `https://api.weather.gov/alerts/active?event=${encodeURIComponent(eventName)}&status=actual&message_type=alert`;
-    const res = await fetchWithRetry(nwsUrl, {}, 1);
-    const data = await res.json();
+    // Query active alerts (cached) and search by VTEC string
+    const data = await getActiveAlerts();
 
-    // Find the matching alert by WFO + phenomena + significance + ETN in VTEC string
-    const vtecPattern = `K${wfo}.${phenomena}.${significance}.${etn.replace(/^0+/, '').padStart(4, '0')}`;
+    // Match by WFO + phenomena + significance + ETN in the VTEC parameter
+    const vtecPattern = `K${wfo}.${phenomena}.${significance}.${etn}`;
     const feature = data.features?.find((f: any) => {
       const vtecStrings: string[] = f.properties?.parameters?.VTEC || [];
       return vtecStrings.some((v: string) => v.includes(vtecPattern));
     });
 
     if (!feature?.geometry?.coordinates) {
-      console.warn(`[wxhq] No NWS geometry found for VTEC ${id}`);
+      console.warn(`[wxhq] No NWS geometry found for VTEC ${id} (pattern: ${vtecPattern})`);
       return null;
     }
 
@@ -110,7 +113,7 @@ async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | nu
     const leafletCoords: [number, number][] = coords.map(([lon, lat]) => [lat, lon]);
 
     const props = feature.properties;
-    const label = `${wfo} ${eventName.replace(' Warning', '')}`;
+    const label = `${wfo} ${props?.event || phenomena}`;
 
     return {
       id,
