@@ -16,6 +16,7 @@ const BASE_SIZE = 13;
 
 function extractPolygons(feature: GeoJSON.Feature): [number, number][][] {
   const geom = feature.geometry;
+  if (!geom) return [];
   if (geom.type === 'Polygon') return (geom as GeoJSON.Polygon).coordinates as [number, number][][];
   if (geom.type === 'MultiPolygon') return (geom as GeoJSON.MultiPolygon).coordinates.flat() as [number, number][][];
   return [];

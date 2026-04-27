@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import type { CSSProperties } from 'react';
+import { Component, useEffect, useState, useRef } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useApp } from '../../context/AppContext';
 import type { RAOBStation, SoundingProfile } from '../../types/sounding';
 import { fetchRAOBStations, fetchSounding } from '../../services/soundingApi';
@@ -7,6 +7,22 @@ import { findNearestStation, haversine } from '../../utils/geoUtils';
 import { Hodograph } from './Hodograph';
 import { SoundingParams } from './SoundingParams';
 import { OverlayDetails } from './OverlayDetails';
+
+/** Prevent child render errors from blanking the entire app */
+class SidebarErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+  static getDerivedStateFromError(err: Error) { return { error: err.message }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 16, color: '#ff4444', fontFamily: 'monospace', fontSize: 13 }}>
+          Render error: {this.state.error}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const FONT = "monospace";
 const BASE_SIZE = 13;
@@ -147,6 +163,7 @@ export function ContextSidebar() {
 
       {/* Scrollable content */}
       <div style={scrollArea}>
+        <SidebarErrorBoundary>
         {/* Hodograph section */}
         <div style={{ marginBottom: 16 }}>
           <div style={sectionHeader}>Hodograph</div>
@@ -187,6 +204,7 @@ export function ContextSidebar() {
           overlays={overlays}
           overlayData={overlayGeoJSON}
         />
+        </SidebarErrorBoundary>
       </div>
     </div>
   );
