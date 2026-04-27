@@ -7,6 +7,8 @@ export interface OverlayConfig {
   color: string;
   category: 'spc' | 'nws' | 'mcd' | 'custom';
   fillMode: 'fill' | 'outline';
+  type?: 'geojson' | 'wms';        // default: 'geojson'
+  wmsLayers?: string;               // WMS LAYERS param (for type='wms')
 }
 
 export interface LayerGroup {
