@@ -1,4 +1,5 @@
 import type { NexradSite, RadarState, RadarProductId } from '../types/radar';
+import { RADAR_PRODUCTS } from '../types/radar';
 import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 import type { MapPoint } from '../types/mapPoints';
@@ -40,7 +41,9 @@ export type AppAction =
   | { type: 'TOGGLE_OVERLAY'; payload: string }
   | { type: 'SET_OVERLAY_FILL_MODE'; payload: { id: string; fillMode: 'fill' | 'outline' } }
   | { type: 'OPEN_SIDEBAR'; payload: [number, number] }
+  | { type: 'SET_SIDEBAR_LATLON'; payload: [number, number] }
   | { type: 'CLOSE_SIDEBAR' }
+  | { type: 'TOGGLE_SIDEBAR' }
   | { type: 'ADD_IEMBOT_MSG'; payload: IEMBotMessage }
   | { type: 'CLEAR_IEMBOT' }
   | { type: 'DISMISS_IEMBOT_MSG'; payload: number }
@@ -154,8 +157,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, overlays: state.overlays.map(o => o.id === action.payload.id ? { ...o, fillMode: action.payload.fillMode } : o) };
     case 'OPEN_SIDEBAR':
       return { ...state, sidebarOpen: true, sidebarLatLon: action.payload };
+    case 'SET_SIDEBAR_LATLON':
+      return { ...state, sidebarLatLon: action.payload };
     case 'CLOSE_SIDEBAR':
-      return { ...state, sidebarOpen: false, sidebarLatLon: null };
+      return { ...state, sidebarOpen: false };
+    case 'TOGGLE_SIDEBAR':
+      return { ...state, sidebarOpen: !state.sidebarOpen };
     case 'ADD_IEMBOT_MSG': {
       if (state.iembotMessages.some((m) => m.seqnum === action.payload.seqnum)) {
         return state;
@@ -229,7 +236,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         newState.radarState = { ...newState.radarState, frameCount: cfg.frameCount };
       }
       if (cfg.radarProduct) {
-        newState.radarState = { ...newState.radarState, radarProduct: cfg.radarProduct };
+        const validIds = RADAR_PRODUCTS.map(p => p.id) as readonly string[];
+        if (validIds.includes(cfg.radarProduct)) {
+          newState.radarState = { ...newState.radarState, radarProduct: cfg.radarProduct };
+        }
       }
       if (cfg.overlays) {
         // Merge saved overlay settings into default overlays
@@ -267,7 +277,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         newState.layout = cfg.layout;
       }
       if (cfg.paneProducts) {
-        newState.paneProducts = cfg.paneProducts;
+        const validIds = RADAR_PRODUCTS.map(p => p.id) as readonly string[];
+        newState.paneProducts = cfg.paneProducts.map(p => validIds.includes(p) ? p : 'N0B') as RadarProductId[];
       }
 
       return newState;

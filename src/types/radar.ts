@@ -12,18 +12,14 @@ export interface RadarFrame {
   product: string;
 }
 
-/** Available NEXRAD Level III products */
+/** Available NEXRAD Level III products (IEM RIDGE tile cache) */
 export const RADAR_PRODUCTS = [
   { id: 'N0B', name: 'Base Refl (Super-Res)', description: '0.5° reflectivity, 250m gates' },
   { id: 'N0Q', name: 'Base Reflectivity', description: '0.5° reflectivity, 1km gates' },
   { id: 'N0U', name: 'Base Velocity', description: '0.5° radial velocity' },
   { id: 'N0S', name: 'Storm Rel Velocity', description: '0.5° storm-relative velocity' },
-  { id: 'N0X', name: 'Diff Reflectivity', description: '0.5° ZDR' },
-  { id: 'N0C', name: 'Correlation Coeff', description: '0.5° CC' },
-  { id: 'N0K', name: 'Specific Diff Phase', description: '0.5° KDP' },
-  { id: 'N0H', name: 'Hydrometeor Class', description: '0.5° HCA' },
-  { id: 'EET', name: 'Echo Tops', description: 'Enhanced echo tops' },
-  { id: 'DVL', name: 'Vert Integ Liquid', description: 'Vertically integrated liquid' },
+  { id: 'N0Z', name: 'Long Range Refl', description: '0.5° reflectivity, long range' },
+  { id: 'NET', name: 'Echo Tops', description: 'Enhanced echo tops' },
 ] as const;
 
 export type RadarProductId = typeof RADAR_PRODUCTS[number]['id'];

@@ -1,7 +1,6 @@
 import { AppProvider, useApp } from './context/AppContext';
 import { MapLayout } from './components/Map/MapLayout';
 import { AnimationControls } from './components/Map/AnimationControls';
-import { OverlayManager } from './components/Overlays/OverlayManager';
 import { ContextSidebar } from './components/Sidebar/ContextSidebar';
 import { IEMBotBadge } from './components/IEMBot/IEMBotBadge';
 import { IEMBotMonitor } from './components/IEMBot/IEMBotMonitor';
@@ -15,7 +14,6 @@ function AppInner() {
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
       <MapLayout />
-      <OverlayManager />
       <AnimationControls />
       <ContextSidebar />
       <IEMBotBadge />

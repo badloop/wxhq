@@ -1,3 +1,4 @@
+import L from 'leaflet';
 import { CircleMarker, Tooltip } from 'react-leaflet';
 import { nexradSites } from '../../data/nexradSites';
 import { useApp } from '../../context/AppContext';
@@ -12,8 +13,12 @@ export function NexradMarkers() {
 
   const showAll = state.refLayers.radarSites?.enabled;
 
-  const handleClick = async (site: NexradSite) => {
+  const handleClick = async (site: NexradSite, e: L.LeafletMouseEvent) => {
+    // Stop the click from propagating to the map (which would open sidebar)
+    L.DomEvent.stopPropagation(e);
     dispatch({ type: 'SELECT_SITE', payload: site });
+    // Update sidebar data without opening it
+    dispatch({ type: 'SET_SIDEBAR_LATLON', payload: [site.lat, site.lon] });
     try {
       const frames = await fetchRadarFrames(site.id, state.radarState.frameCount, state.radarState.radarProduct);
       dispatch({ type: 'SET_FRAMES', payload: { frames } });
@@ -37,7 +42,7 @@ export function NexradMarkers() {
               fillOpacity: site.id === selectedId ? 0.9 : 0.6,
               weight: site.id === selectedId ? 2 : 1,
             }}
-            eventHandlers={{ click: () => handleClick(site) }}
+            eventHandlers={{ click: (e) => handleClick(site, e) }}
           >
             <Tooltip direction="top" offset={[0, -8]}>
               <strong>{site.id}</strong> — {site.name}, {site.state}
