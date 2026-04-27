@@ -1,14 +1,17 @@
+import { useMemo } from 'react';
 import { TileLayer, Pane } from 'react-leaflet';
 import { useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
+import { getRadarTileUrl } from '../../services/radarApi';
 import type { RadarProductId } from '../../types/radar';
 
 interface SingleSiteRadarProps {
   productOverride?: RadarProductId;
+  paneIndex?: number;
 }
 
-export function SingleSiteRadar({ productOverride }: SingleSiteRadarProps) {
+export function SingleSiteRadar({ productOverride, paneIndex = 0 }: SingleSiteRadarProps) {
   const { state, dispatch } = useApp();
   const site = state.radarState.selectedSite;
   const { frames, animationSpeed, isAnimating, currentFrame, radarProduct: stateProduct } = state.radarState;
@@ -23,31 +26,44 @@ export function SingleSiteRadar({ productOverride }: SingleSiteRadarProps) {
     [dispatch],
   );
 
+  // Only pane 0 drives the animation timer to avoid multiple hooks fighting
   useRadarAnimation(
-    !!site && isAnimating,
+    paneIndex === 0 && !!site && isAnimating,
     frames.length,
     animationSpeed,
     currentFrame,
     onFrame,
   );
 
+  // Build tile URLs for this pane's product from shared timestamps
+  const paneUrls = useMemo(() => {
+    if (!site || frames.length === 0) return [];
+    return frames.map(f => getRadarTileUrl(site.id, radarProduct, f.timestamp));
+  }, [site, frames, radarProduct]);
+
   if (!site) return null;
 
   const ridgeSiteId = site.id.replace(/^K/, '');
 
-  if (isAnimating && frames.length > 0) {
+  if (isAnimating && paneUrls.length > 0) {
+    // Only render current frame + next frame (for preloading) instead of all frames
+    const visibleIndices = new Set([currentFrame, (currentFrame + 1) % paneUrls.length]);
+
     return (
       <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
-        {frames.map((frame, i) => (
-          <TileLayer
-            key={`ridge-${site.id}-${radarProduct}-${i}`}
-            url={frame.url}
-            opacity={i === currentFrame ? radarOpacity : 0}
-            maxZoom={18}
-            maxNativeZoom={16}
-            pane="radar-pane"
-          />
-        ))}
+        {paneUrls.map((url, i) => {
+          if (!visibleIndices.has(i)) return null;
+          return (
+            <TileLayer
+              key={`ridge-${site.id}-${radarProduct}-${i}`}
+              url={url}
+              opacity={i === currentFrame ? radarOpacity : 0}
+              maxZoom={18}
+              maxNativeZoom={16}
+              pane="radar-pane"
+            />
+          );
+        })}
       </Pane>
     );
   }

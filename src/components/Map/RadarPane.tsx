@@ -80,8 +80,8 @@ export function RadarPane({ paneIndex, radarProduct, onProductChange, showContro
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           maxZoom={19}
         />
-        <NexradMosaic />
-        <SingleSiteRadar productOverride={radarProduct} />
+        <NexradMosaic paneIndex={paneIndex} />
+        <SingleSiteRadar productOverride={radarProduct} paneIndex={paneIndex} />
         <ReferenceLayers />
         <OverlayLayers />
         <MapPoints />

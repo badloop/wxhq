@@ -21,7 +21,7 @@ function useRadarPane(zIndex: number) {
   }, [map, zIndex]);
 }
 
-export function NexradMosaic() {
+export function NexradMosaic({ paneIndex = 0 }: { paneIndex?: number }) {
   const { state, dispatch } = useApp();
   const { selectedSite, isAnimating, animationSpeed, currentFrame } = state.radarState;
 
@@ -37,7 +37,7 @@ export function NexradMosaic() {
   );
 
   useRadarAnimation(
-    !selectedSite && isAnimating,
+    paneIndex === 0 && !selectedSite && isAnimating,
     MOSAIC_URLS.length,
     animationSpeed,
     currentFrame,
