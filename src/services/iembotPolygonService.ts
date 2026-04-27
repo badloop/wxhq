@@ -103,14 +103,12 @@ async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | nu
   const id = `vtec-${wfo}-${phenomena}-${significance}-${etn}`;
   const etnNum = parseInt(etn, 10);
 
-  // Watches (A) are issued by SPC nationally — IEM returns 0 features per-WFO. Skip.
-  if (significance === 'A') return null;
-
   const iemUrl = `https://mesonet.agron.iastate.edu/vtec/#${year}-O-NEW-K${wfo}-${phenomena}-${significance}-${etn}`;
 
   try {
-    // IEM GeoJSON API: returns county/zone polygons for any VTEC event (even expired)
-    const apiUrl = `https://mesonet.agron.iastate.edu/geojson/vtec_event.py?wfo=${wfo}&year=${year}&phenomena=${phenomena}&significance=${significance}&etn=${etnNum}`;
+    // IEM GeoJSON API: sbw=0 returns county/zone polygons (needed for watches/advisories),
+    // sbw=1 returns storm-based warning polygons. Use sbw=0 for everything to get geometry.
+    const apiUrl = `https://mesonet.agron.iastate.edu/geojson/vtec_event.py?wfo=${wfo}&year=${year}&phenomena=${phenomena}&significance=${significance}&etn=${etnNum}&sbw=0&lsrs=0`;
     const res = await fetchWithRetry(apiUrl, {}, 1);
     const data = await res.json();
 
