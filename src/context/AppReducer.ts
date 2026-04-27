@@ -4,13 +4,13 @@ import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 import type { MapPoint } from '../types/mapPoints';
 
-export interface MCDPolygon {
-  id: string;           // e.g. "MD0570"
+export interface IEMBotPolygon {
+  id: string;           // e.g. "mcd-0570" or "vtec-PAH-SV-W-0213"
   coordinates: [number, number][]; // [lat, lng] pairs for Leaflet
-  label: string;        // e.g. "MCD #570"
+  label: string;        // e.g. "MCD #570" or "PAH Severe Tstm"
   concerning: string;   // brief description
-  url: string;          // SPC page URL
-  timestamp: number;    // when added (for expiry)
+  url: string;          // source page URL
+  timestamp: number;    // when added
 }
 
 export interface RefLayerConfig {
@@ -35,7 +35,7 @@ export interface AppState {
   iembotDismissed: number[];
   mapPoints: MapPoint[];
   refLayers: Record<string, RefLayerConfig>;
-  mcdPolygons: MCDPolygon[];
+  mcdPolygons: IEMBotPolygon[];
   layout: 1 | 2 | 4;
   paneProducts: RadarProductId[];
 }
@@ -73,7 +73,7 @@ export type AppAction =
   | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } }
   | { type: 'SET_LAYOUT'; payload: 1 | 2 | 4 }
   | { type: 'SET_PANE_PRODUCT'; payload: { pane: number; product: RadarProductId } }
-  | { type: 'ADD_MCD_POLYGON'; payload: MCDPolygon }
+  | { type: 'ADD_MCD_POLYGON'; payload: IEMBotPolygon }
   | { type: 'REMOVE_MCD_POLYGON'; payload: string };
 
 /** The subset of state that gets persisted to YAML */
@@ -152,6 +152,24 @@ export const initialState: AppState = {
   paneProducts: ['N0B'],
 };
 
+/** Extract the polygon ID that would have been generated for this message */
+function extractPolygonId(messageHtml: string, productId: string): string | null {
+  // MCD
+  if (productId.includes('SWOMCD')) {
+    const mdMatch = messageHtml.match(/md(\d+)\.html/);
+    return mdMatch ? `mcd-${mdMatch[1]}` : null;
+  }
+  // VTEC warning
+  const vtecMatch = messageHtml.match(
+    /href='https:\/\/mesonet\.agron\.iastate\.edu\/vtec\/f\/\d{4}-O-\w+-K(\w{3})-(\w{2})-(\w)-(\d{4})/
+  );
+  if (vtecMatch) {
+    const [, wfo, phenomena, significance, etn] = vtecMatch;
+    return `vtec-${wfo}-${phenomena}-${significance}-${etn}`;
+  }
+  return null;
+}
+
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SELECT_SITE':
@@ -199,12 +217,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'DISMISS_IEMBOT_MSG': {
       const dismissed = state.iembotMessages.find(m => m.seqnum === action.payload);
       let mcdPolygons = state.mcdPolygons;
-      // If dismissing an MCD message, remove its polygon
-      if (dismissed && dismissed.productId.includes('SWOMCD')) {
-        const mdMatch = dismissed.message.match(/md(\d+)\.html/);
-        if (mdMatch) {
-          const mdId = `MD${mdMatch[1]}`;
-          mcdPolygons = mcdPolygons.filter(p => p.id !== mdId);
+      if (dismissed) {
+        const polyId = extractPolygonId(dismissed.message, dismissed.productId);
+        if (polyId) {
+          mcdPolygons = mcdPolygons.filter(p => p.id !== polyId);
         }
       }
       return {

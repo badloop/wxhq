@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchIEMBotMessages, cleanMessageHtml } from '../services/iembotApi';
-import { fetchMCDFromMessage } from '../services/mcdPolygonService';
+import { fetchPolygonFromMessage } from '../services/iembotPolygonService';
 
 /** Synthesize a short notification beep via Web Audio API */
 function playNotificationSound() {
@@ -117,12 +117,10 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
             });
             newMessageCount++;
 
-            // If this is an MCD message, fetch the polygon in the background
-            if ((msg.product_id ?? '').includes('SWOMCD')) {
-              fetchMCDFromMessage(cleanedHtml).then(poly => {
-                if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
-              });
-            }
+            // Fetch polygon for any message that might have geographic data
+            fetchPolygonFromMessage(cleanedHtml, msg.product_id ?? '').then(poly => {
+              if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
+            });
 
             // Only queue for notifications if message arrived AFTER boot
             const msgTime = parseIEMTimestamp(msg.ts);
@@ -171,21 +169,18 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
     poll();
     const id = setInterval(poll, pollInterval);
 
-    // One-time: scan persisted messages for MCD polygons on startup
+    // One-time: scan persisted messages for polygons on startup
     if (!mcdScannedRef.current) {
       mcdScannedRef.current = true;
-      const mcdMsgs = state.iembotMessages.filter(m => m.productId.includes('SWOMCD'));
-      console.log(`[wxhq] MCD scan: ${state.iembotMessages.length} messages, ${mcdMsgs.length} SWOMCD`);
-      for (const msg of mcdMsgs) {
-        fetchMCDFromMessage(msg.message).then(poly => {
+      console.log(`[wxhq] Polygon scan: ${state.iembotMessages.length} messages`);
+      for (const msg of state.iembotMessages) {
+        fetchPolygonFromMessage(msg.message, msg.productId).then(poly => {
           if (poly) {
-            console.log(`[wxhq] MCD polygon loaded: ${poly.id}`, poly.coordinates.length, 'points');
+            console.log(`[wxhq] Polygon loaded: ${poly.id}`);
             dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
-          } else {
-            console.warn(`[wxhq] MCD polygon parse returned null for message seqnum=${msg.seqnum}`);
           }
         }).catch(err => {
-          console.error(`[wxhq] MCD polygon fetch failed for seqnum=${msg.seqnum}:`, err);
+          console.error(`[wxhq] Polygon fetch failed for seqnum=${msg.seqnum}:`, err);
         });
       }
     }
