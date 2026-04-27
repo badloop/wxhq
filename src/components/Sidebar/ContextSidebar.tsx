@@ -8,6 +8,8 @@ import { Hodograph } from './Hodograph';
 import { SoundingParams } from './SoundingParams';
 import { OverlayDetails } from './OverlayDetails';
 
+const FONT = "'Share Tech Mono', monospace";
+const BASE_SIZE = 13;
 const MAX_STATION_DIST_KM = 200;
 
 const panelBase: CSSProperties = {
@@ -15,14 +17,15 @@ const panelBase: CSSProperties = {
   top: 0,
   right: 0,
   bottom: 56,
-  width: 380,
+  width: 420,
   background: 'rgba(10, 10, 15, 0.95)',
   borderLeft: '1px solid rgba(0, 240, 255, 0.3)',
   boxShadow: '-4px 0 20px rgba(0, 240, 255, 0.1)',
   zIndex: 1001,
   display: 'flex',
   flexDirection: 'column',
-  fontFamily: 'var(--font-mono)',
+  fontFamily: FONT,
+  fontSize: BASE_SIZE,
   transition: 'transform 0.3s ease',
 };
 
@@ -42,8 +45,8 @@ const closeBtn: CSSProperties = {
   width: 28,
   height: 28,
   cursor: 'pointer',
-  fontSize: 14,
-  fontFamily: 'var(--font-mono)',
+  fontSize: BASE_SIZE,
+  fontFamily: FONT,
   borderRadius: 4,
   display: 'flex',
   alignItems: 'center',
@@ -58,7 +61,8 @@ const scrollArea: CSSProperties = {
 
 const sectionHeader: CSSProperties = {
   color: '#00f0ff',
-  fontSize: 11,
+  fontSize: BASE_SIZE,
+  fontFamily: FONT,
   textTransform: 'uppercase',
   letterSpacing: '1px',
   marginBottom: 8,
@@ -129,11 +133,11 @@ export function ContextSidebar() {
       {/* Header */}
       <div style={headerStyle}>
         <div>
-          <div style={{ color: '#00f0ff', fontSize: 13 }}>
+          <div style={{ color: '#00f0ff', fontSize: BASE_SIZE + 1, fontFamily: FONT }}>
             {lat.toFixed(3)}°, {lon.toFixed(3)}°
           </div>
           {station && (
-            <div style={{ color: '#a0a0b0', fontSize: 11, marginTop: 2 }}>
+            <div style={{ color: '#a0a0b0', fontSize: BASE_SIZE - 1, fontFamily: FONT, marginTop: 2 }}>
               {station.name}, {station.state} ({Math.round(stationDist)} km)
             </div>
           )}
@@ -147,20 +151,20 @@ export function ContextSidebar() {
         <div style={{ marginBottom: 16 }}>
           <div style={sectionHeader}>Hodograph</div>
           {loading && (
-            <div style={{ color: '#a0a0b0', fontSize: 12, textAlign: 'center', padding: 20 }}>
+            <div style={{ color: '#a0a0b0', fontSize: BASE_SIZE, fontFamily: FONT, textAlign: 'center', padding: 20 }}>
               Loading sounding...
             </div>
           )}
           {!loading && hasValidSounding && (
             <>
               <Hodograph levels={sounding!.levels} sfcHeight={sfcHeight} />
-              <div style={{ color: '#a0a0b0', fontSize: 10, textAlign: 'center', marginTop: 4 }}>
+              <div style={{ color: '#a0a0b0', fontSize: BASE_SIZE - 1, fontFamily: FONT, textAlign: 'center', marginTop: 4 }}>
                 {sounding!.valid}
               </div>
             </>
           )}
           {!loading && !hasValidSounding && (
-            <div style={{ color: '#a0a0b0', fontSize: 12, textAlign: 'center', padding: 20 }}>
+            <div style={{ color: '#a0a0b0', fontSize: BASE_SIZE, fontFamily: FONT, textAlign: 'center', padding: 20 }}>
               {stationDist > MAX_STATION_DIST_KM
                 ? `Nearest station too far (${Math.round(stationDist)} km)`
                 : 'No sounding data available'}

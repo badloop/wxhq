@@ -44,9 +44,9 @@ export function IEMBotMonitor({ isConnected }: { isConnected: boolean }) {
     color: '#e0e0e0',
     padding: '4px 8px',
     borderRadius: 4,
-    fontSize: 12,
+    fontSize: 13,
     outline: 'none',
-    fontFamily: 'monospace',
+    fontFamily: "'Share Tech Mono', monospace",
   };
 
   const btnStyle: React.CSSProperties = {
@@ -55,9 +55,9 @@ export function IEMBotMonitor({ isConnected }: { isConnected: boolean }) {
     color: '#00f0ff',
     padding: '4px 10px',
     borderRadius: 4,
-    fontSize: 11,
+    fontSize: 12,
     cursor: 'pointer',
-    fontFamily: 'monospace',
+    fontFamily: "'Share Tech Mono', monospace",
   };
 
   return (
@@ -100,7 +100,7 @@ export function IEMBotMonitor({ isConnected }: { isConnected: boolean }) {
               display: 'inline-block',
             }}
           />
-          <span style={{ color: '#00f0ff', fontWeight: 'bold', fontSize: 14, fontFamily: 'monospace' }}>
+          <span style={{ color: '#00f0ff', fontWeight: 'bold', fontSize: 14, fontFamily: "'Share Tech Mono', monospace" }}>
             IEMBot Monitor
           </span>
         </div>

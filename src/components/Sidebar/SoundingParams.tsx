@@ -6,6 +6,9 @@ interface SoundingParamsProps {
   levels: SoundingProfileLevel[];
 }
 
+const FONT = "'Share Tech Mono', monospace";
+const BASE_SIZE = 13;
+
 const grid: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
@@ -13,28 +16,28 @@ const grid: CSSProperties = {
   padding: '8px 0',
 };
 
-const label: CSSProperties = {
+const labelStyle: CSSProperties = {
   color: '#00f0ff',
-  fontSize: 10,
-  fontFamily: 'var(--font-mono)',
+  fontSize: BASE_SIZE - 1,
+  fontFamily: FONT,
   textTransform: 'uppercase',
   letterSpacing: '0.5px',
 };
 
-const value: CSSProperties = {
+const valueStyle: CSSProperties = {
   color: '#e0e0e0',
-  fontSize: 14,
-  fontFamily: 'var(--font-mono)',
+  fontSize: BASE_SIZE + 2,
+  fontFamily: FONT,
   fontWeight: 600,
 };
 
 function Param({ name, val, unit }: { name: string; val: number | string; unit: string }) {
   return (
     <div>
-      <div style={label}>{name}</div>
-      <div style={value}>
+      <div style={labelStyle}>{name}</div>
+      <div style={valueStyle}>
         {typeof val === 'number' ? Math.round(val) : val}
-        <span style={{ fontSize: 10, color: '#a0a0b0', marginLeft: 2 }}>{unit}</span>
+        <span style={{ fontSize: BASE_SIZE - 2, color: '#a0a0b0', marginLeft: 2 }}>{unit}</span>
       </div>
     </div>
   );
@@ -42,7 +45,7 @@ function Param({ name, val, unit }: { name: string; val: number | string; unit: 
 
 export function SoundingParams({ levels }: SoundingParamsProps) {
   if (levels.length < 3) {
-    return <div style={{ color: '#a0a0b0', fontSize: 12, fontFamily: 'var(--font-mono)', padding: '8px 0' }}>Insufficient data</div>;
+    return <div style={{ color: '#a0a0b0', fontSize: BASE_SIZE, fontFamily: FONT, padding: '8px 0' }}>Insufficient data</div>;
   }
 
   const { cape, cin, lcl } = calcCAPE(levels);

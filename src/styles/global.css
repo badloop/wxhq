@@ -30,7 +30,10 @@ html, body, #root {
   overflow: hidden;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: var(--font-heading);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scanline overlay */
@@ -107,6 +110,6 @@ html, body, #root {
 }
 
 button {
-  font-family: var(--font-heading);
+  font-family: var(--font-mono);
   cursor: pointer;
 }
