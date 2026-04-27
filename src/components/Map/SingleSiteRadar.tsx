@@ -23,27 +23,29 @@ export function SingleSiteRadar() {
 
   if (!site) return null;
 
-  // When animating with frames, show the historical frame tile
+  const ridgeSiteId = site.id.replace(/^K/, '');
+
   if (isAnimating && frames.length > 0) {
-    const frame = frames[currentFrame] || frames[0];
+    // Render ALL frame layers simultaneously — active one visible, rest hidden.
+    // Tiles get cached by Leaflet/browser so subsequent loops are smooth.
     return (
-      <TileLayer
-        url={frame.url}
-        opacity={0.8}
-        maxZoom={12}
-        attribution={`RIDGE ${site.id} © IEM`}
-        key={`ridge-${site.id}-frame-${currentFrame}`}
-      />
+      <>
+        {frames.map((frame, i) => (
+          <TileLayer
+            key={`ridge-${site.id}-${i}`}
+            url={frame.url}
+            opacity={i === currentFrame ? 0.8 : 0}
+            maxZoom={12}
+          />
+        ))}
+      </>
     );
   }
 
-  // Default: show current/live radar for selected site
-  const ridgeSiteId = site.id.replace(/^K/, '');
-  const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-N0B-0/{z}/{x}/{y}.png`;
-
+  // Default: show current/live radar
   return (
     <TileLayer
-      url={url}
+      url={`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-N0B-0/{z}/{x}/{y}.png`}
       opacity={0.8}
       maxZoom={12}
       attribution={`RIDGE ${site.id} © IEM`}
