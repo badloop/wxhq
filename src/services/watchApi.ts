@@ -119,6 +119,7 @@ export async function fetchActiveWatches(): Promise<FeatureCollection> {
           phenomena: seg.phenomena,
           significance: seg.significance,
           etn: seg.etn,
+          url: `https://www.spc.noaa.gov/products/watch/ww${seg.etn}.html`,
           stroke: color,
           fill: color,
         },

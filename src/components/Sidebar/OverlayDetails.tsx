@@ -303,6 +303,18 @@ function WatchDetail({ feature, color }: { feature: GeoJSON.Feature; color: stri
           {p.headline && <Field label="Headline" value={stripHtml(p.headline)} multiline />}
           <Field label="Watch #" value={p.etn ? String(parseInt(p.etn, 10)) : ''} />
           <Field label="Type" value={p.phenomena === 'TO' ? 'Tornado' : p.phenomena === 'SV' ? 'Severe Thunderstorm' : p.phenomena || ''} />
+          {p.url && (
+            <div style={{ marginTop: 6 }}>
+              <a
+                href={p.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#00f0ff', fontFamily: FONT, fontSize: BASE_SIZE }}
+              >
+                View Watch Details
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>
