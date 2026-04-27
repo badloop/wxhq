@@ -7,6 +7,7 @@ import { fetchWithRetry } from '../../services/fetchClient';
 import { fetchActiveMCDs } from '../../services/mcdApi';
 
 function OverlayLayer({ config }: { config: OverlayConfig }) {
+  const { dispatch } = useApp();
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
   const [revision, setRevision] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -18,13 +19,23 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
       try {
         let data: GeoJSON.FeatureCollection;
         if (config.id === 'mcd') {
-          // MCDs require special fetching — scrape SPC active MD pages for LAT...LON polygons
           data = await fetchActiveMCDs();
         } else {
           const res = await fetchWithRetry(config.url);
-          data = await res.json();
+          const raw = await res.json();
+          // NWS alerts API returns { features: [...] } but with extra wrapper properties
+          // Normalize to a standard FeatureCollection
+          if (raw.features) {
+            data = { type: 'FeatureCollection', features: raw.features };
+          } else {
+            data = raw;
+          }
         }
-        if (!cancelled) { setGeojson(data); setRevision(r => r + 1); }
+        if (!cancelled) {
+          setGeojson(data);
+          setRevision(r => r + 1);
+          dispatch({ type: 'SET_OVERLAY_GEOJSON', payload: { id: config.id, geojson: data } });
+        }
       } catch (err) {
         console.error(`Overlay fetch failed for ${config.id}:`, err);
       }

@@ -7,7 +7,7 @@ interface OverlayDetailsProps {
   lat: number;
   lon: number;
   overlays: OverlayConfig[];
-  overlayData: Map<string, GeoJSON.FeatureCollection>;
+  overlayData: Record<string, GeoJSON.FeatureCollection>;
 }
 
 const sectionStyle: CSSProperties = {
@@ -93,7 +93,7 @@ export function OverlayDetails({ lat, lon, overlays, overlayData }: OverlayDetai
   const hits: { config: OverlayConfig; features: GeoJSON.Feature[] }[] = [];
 
   for (const config of enabledOverlays) {
-    const fc = overlayData.get(config.id);
+    const fc = overlayData[config.id];
     if (!fc?.features) continue;
     const matching = fc.features.filter(f => featureContainsPoint(f, lat, lon));
     if (matching.length > 0) hits.push({ config, features: matching });

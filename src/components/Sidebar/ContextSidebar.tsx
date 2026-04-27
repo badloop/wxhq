@@ -68,14 +68,13 @@ const sectionHeader: CSSProperties = {
 
 export function ContextSidebar() {
   const { state, dispatch } = useApp();
-  const { sidebarOpen, sidebarLatLon, overlays } = state;
+  const { sidebarOpen, sidebarLatLon, overlays, overlayGeoJSON } = state;
 
   const stationsRef = useRef<RAOBStation[]>([]);
   const [station, setStation] = useState<RAOBStation | null>(null);
   const [stationDist, setStationDist] = useState(0);
   const [sounding, setSounding] = useState<SoundingProfile | null>(null);
   const [loading, setLoading] = useState(false);
-  const [overlayData] = useState<Map<string, GeoJSON.FeatureCollection>>(() => new Map());
 
   // Load RAOB stations once
   useEffect(() => {
@@ -118,24 +117,6 @@ export function ContextSidebar() {
       })
       .finally(() => setLoading(false));
   }, [sidebarOpen, sidebarLatLon]);
-
-  // Collect overlay GeoJSON data from DOM (read from OverlayLayers cache)
-  // We'll fetch overlay data directly for point-in-polygon checks
-  useEffect(() => {
-    if (!sidebarOpen) return;
-    const enabled = overlays.filter(o => o.enabled);
-    for (const config of enabled) {
-      if (overlayData.has(config.id)) continue;
-      // Fetch overlay data for point-in-polygon
-      if (config.id === 'mcd') continue; // MCD uses custom fetch
-      fetch(config.url)
-        .then(r => r.json())
-        .then(data => {
-          overlayData.set(config.id, data);
-        })
-        .catch(() => { /* ignore */ });
-    }
-  }, [sidebarOpen, overlays, overlayData]);
 
   if (!sidebarOpen || !sidebarLatLon) return null;
 
@@ -200,7 +181,7 @@ export function ContextSidebar() {
           lat={lat}
           lon={lon}
           overlays={overlays}
-          overlayData={overlayData}
+          overlayData={overlayGeoJSON}
         />
       </div>
     </div>

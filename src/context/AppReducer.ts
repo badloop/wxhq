@@ -5,6 +5,7 @@ import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 export interface AppState {
   radarState: RadarState;
   overlays: OverlayConfig[];
+  overlayGeoJSON: Record<string, GeoJSON.FeatureCollection>;
   sidebarOpen: boolean;
   sidebarLatLon: [number, number] | null;
   iembotMessages: IEMBotMessage[];
@@ -28,7 +29,8 @@ export type AppAction =
   | { type: 'TOGGLE_IEMBOT_PANEL' }
   | { type: 'MARK_IEMBOT_READ' }
   | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
-  | { type: 'ADD_OVERLAY'; payload: OverlayConfig };
+  | { type: 'ADD_OVERLAY'; payload: OverlayConfig }
+  | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } };
 
 export const initialState: AppState = {
   radarState: {
@@ -47,6 +49,7 @@ export const initialState: AppState = {
     { id: 'watches', name: 'NWS Watches', url: 'https://api.weather.gov/alerts/active?event=Tornado%20Watch,Severe%20Thunderstorm%20Watch&status=actual&message_type=alert', enabled: false, refreshInterval: 60000, color: '#ffff00', category: 'nws' },
     { id: 'mcd', name: 'Mesoscale Discussions', url: 'spc-mcd-custom', enabled: false, refreshInterval: 120000, color: '#4444ff', category: 'spc' },
   ],
+  overlayGeoJSON: {},
   sidebarOpen: false,
   sidebarLatLon: null,
   iembotMessages: [],
@@ -100,6 +103,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, iembotConfig: { ...state.iembotConfig, rooms: action.payload } };
     case 'ADD_OVERLAY':
       return { ...state, overlays: [...state.overlays, action.payload] };
+    case 'SET_OVERLAY_GEOJSON':
+      return { ...state, overlayGeoJSON: { ...state.overlayGeoJSON, [action.payload.id]: action.payload.geojson } };
     default:
       return state;
   }
