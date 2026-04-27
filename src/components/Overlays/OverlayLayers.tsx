@@ -34,12 +34,24 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
 
   if (!geojson) return null;
 
-  const style = (): PathOptions => ({
-    color: config.color,
-    weight: 2,
-    fillColor: config.color,
-    fillOpacity: 0.15,
-  });
+  // SPC outlook features have 'stroke' and 'fill' properties with correct risk-level colors
+  const style = (feature?: GeoJSON.Feature): PathOptions => {
+    const props = feature?.properties;
+    if (props?.stroke || props?.fill) {
+      return {
+        color: props.stroke || config.color,
+        weight: 2,
+        fillColor: props.fill || config.color,
+        fillOpacity: 0.25,
+      };
+    }
+    return {
+      color: config.color,
+      weight: 2,
+      fillColor: config.color,
+      fillOpacity: 0.15,
+    };
+  };
 
   return <GeoJSON key={`${config.id}-${revision}`} data={geojson} style={style} />;
 }

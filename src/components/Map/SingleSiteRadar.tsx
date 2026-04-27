@@ -7,7 +7,8 @@ export function SingleSiteRadar() {
 
   if (!site) return null;
 
-  const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${site.id}-N0B-0/{z}/{x}/{y}.png`;
+  const ridgeSiteId = site.id.replace(/^K/, '');
+  const url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-N0B-0/{z}/{x}/{y}.png`;
 
   return (
     <TileLayer

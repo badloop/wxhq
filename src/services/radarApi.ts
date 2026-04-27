@@ -30,9 +30,11 @@ export async function fetchRadarFrames(siteId: string, count: number = 10): Prom
 }
 
 export function getRadarTileUrl(siteId: string, timestamp?: string): string {
-  // Tile URLs use the full site ID (with K prefix)
-  const ts = timestamp ? timestamp.replace(/[- :Z]/g, '').slice(0, 12) : '0';
-  return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${siteId}-N0B-${ts}/{z}/{x}/{y}.png`;
+  // RIDGE tile URLs require 3-char site ID (no K prefix) for historical frames
+  const ridgeSiteId = siteId.replace(/^K/, '');
+  // Timestamp from API is like "2026-04-27T12:02Z" — strip all non-digits to get YYYYMMDDHHmm
+  const ts = timestamp ? timestamp.replace(/\D/g, '').slice(0, 12) : '0';
+  return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-N0B-${ts}/{z}/{x}/{y}.png`;
 }
 
 /** Minutes-ago values for mosaic history layers: 5, 10, 15, ... 55 */
