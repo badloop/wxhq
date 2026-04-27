@@ -263,10 +263,59 @@ function MCDDetail({ feature, color }: { feature: GeoJSON.Feature; color: string
   );
 }
 
+/** Watch detail (tornado/severe thunderstorm watches) */
+function WatchDetail({ feature, color }: { feature: GeoJSON.Feature; color: string }) {
+  const [open, setOpen] = useState(false);
+  const p = feature.properties || {};
+
+  const title = p.event || 'Watch';
+
+  return (
+    <div style={{ marginBottom: 8, borderRadius: 4, overflow: 'hidden' }}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          background: 'rgba(26, 26, 46, 0.8)',
+          borderLeft: `3px solid ${p.stroke || color}`,
+          cursor: 'pointer',
+          fontFamily: FONT,
+          fontSize: BASE_SIZE,
+          color: '#e0e0e0',
+        }}
+      >
+        <span>{title}</span>
+        <span style={{ fontSize: BASE_SIZE - 2, color: '#a0a0b0' }}>{open ? '▲' : '▼'}</span>
+      </div>
+      {open && (
+        <div style={{
+          padding: '10px 12px',
+          background: 'rgba(10, 10, 15, 0.6)',
+          borderLeft: `3px solid ${p.stroke || color}`,
+          fontFamily: FONT,
+          fontSize: BASE_SIZE,
+          color: '#c0c0d0',
+          lineHeight: 1.5,
+        }}>
+          {p.headline && <Field label="Headline" value={stripHtml(p.headline)} multiline />}
+          <Field label="Watch #" value={p.etn ? String(parseInt(p.etn, 10)) : ''} />
+          <Field label="Type" value={p.phenomena === 'TO' ? 'Tornado' : p.phenomena === 'SV' ? 'Severe Thunderstorm' : p.phenomena || ''} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Pick the right detail component based on overlay category */
 function FeatureDetail({ feature, config }: { feature: GeoJSON.Feature; config: OverlayConfig }) {
-  if (config.category === 'nws') {
+  if (config.category === 'warnings') {
     return <NWSDetail feature={feature} color={config.color} />;
+  }
+  if (config.category === 'watches') {
+    return <WatchDetail feature={feature} color={config.color} />;
   }
   if (config.id === 'mcd') {
     return <MCDDetail feature={feature} color={config.color} />;

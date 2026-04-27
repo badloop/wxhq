@@ -67,7 +67,7 @@ function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOp
         fill: !noFill,
       };
     }
-    if (config.category === 'nws' && props?.event) {
+    if (config.category === 'warnings' && props?.event) {
       const evt = (props.event as string).toLowerCase();
       let c = config.color;
       if (evt.includes('tornado')) c = '#ff69b4';
