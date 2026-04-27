@@ -10,8 +10,7 @@ import { useIEMBot } from './hooks/useIEMBot';
 function AppInner() {
   const { state } = useApp();
   const config = state.iembotConfig;
-  // Always poll, regardless of panel open/closed
-  const { isConnected } = useIEMBot(config.rooms, config.pollInterval);
+  const { isConnected, setAudioEnabled } = useIEMBot(config.rooms, config.pollInterval);
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
@@ -20,7 +19,7 @@ function AppInner() {
       <AnimationControls />
       <ContextSidebar />
       <IEMBotBadge />
-      <IEMBotMonitor isConnected={isConnected} />
+      <IEMBotMonitor isConnected={isConnected} setAudioEnabled={setAudioEnabled} />
     </div>
   );
 }

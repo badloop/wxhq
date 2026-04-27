@@ -4,10 +4,11 @@ import { MessageList } from './MessageList';
 
 const PRESET_ROOMS = ['botstalk', 'spcchat', 'emergchat', 'pdschat', 'dmgchat'];
 
-export function IEMBotMonitor({ isConnected }: { isConnected: boolean }) {
+export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: boolean; setAudioEnabled: (v: boolean) => void }) {
   const { state, dispatch } = useApp();
   const [filter, setFilter] = useState('');
   const [roomInput, setRoomInput] = useState('');
+  const [muted, setMuted] = useState(false);
 
   const config = state.iembotConfig;
 
@@ -105,6 +106,13 @@ export function IEMBotMonitor({ isConnected }: { isConnected: boolean }) {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            onClick={() => { setMuted(!muted); setAudioEnabled(muted); }}
+            style={{ ...btnStyle, color: muted ? '#ff4444' : '#39ff14', borderColor: muted ? 'rgba(255,68,68,0.3)' : 'rgba(57,255,20,0.3)' }}
+            title={muted ? 'Unmute notifications' : 'Mute notifications'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button onClick={handleMarkRead} style={btnStyle} title="Mark all read">
             ✓
           </button>
