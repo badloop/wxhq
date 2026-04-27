@@ -34,6 +34,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.iembotDismissed !== state.iembotDismissed ||
       prev.mapPoints !== state.mapPoints ||
       prev.refLayers !== state.refLayers ||
+      prev.layout !== state.layout ||
+      prev.paneProducts !== state.paneProducts ||
       prev.radarState.animationSpeed !== state.radarState.animationSpeed ||
       prev.radarState.frameCount !== state.radarState.frameCount ||
       prev.radarState.radarProduct !== state.radarState.radarProduct;

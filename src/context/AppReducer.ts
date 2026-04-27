@@ -25,6 +25,8 @@ export interface AppState {
   iembotDismissed: number[];
   mapPoints: MapPoint[];
   refLayers: Record<string, RefLayerConfig>;
+  layout: 1 | 2 | 4;
+  paneProducts: RadarProductId[];
 }
 
 export type AppAction =
@@ -55,7 +57,9 @@ export type AppAction =
   | { type: 'ADD_MAP_POINT'; payload: MapPoint }
   | { type: 'REMOVE_MAP_POINT'; payload: string }
   | { type: 'TOGGLE_REF_LAYER'; payload: string }
-  | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } };
+  | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } }
+  | { type: 'SET_LAYOUT'; payload: 1 | 2 | 4 }
+  | { type: 'SET_PANE_PRODUCT'; payload: { pane: number; product: RadarProductId } };
 
 /** The subset of state that gets persisted to YAML */
 export interface PersistableConfig {
@@ -71,6 +75,8 @@ export interface PersistableConfig {
   radarProduct: RadarProductId;
   mapPoints: MapPoint[];
   refLayers: Record<string, RefLayerConfig>;
+  layout: 1 | 2 | 4;
+  paneProducts: RadarProductId[];
 }
 
 export const defaultOverlays: OverlayConfig[] = [
@@ -122,6 +128,8 @@ export const initialState: AppState = {
     countyLines: { enabled: false, color: '#555555', weight: 0.5, opacity: 0.4 },
     radarSites: { enabled: true, color: '#00f0ff', weight: 1, opacity: 1 },
   },
+  layout: 1,
+  paneProducts: ['N0B'],
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -255,6 +263,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         }
         newState.refLayers = merged;
       }
+      if (cfg.layout) {
+        newState.layout = cfg.layout;
+      }
+      if (cfg.paneProducts) {
+        newState.paneProducts = cfg.paneProducts;
+      }
 
       return newState;
     }
@@ -267,6 +281,18 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_REF_LAYER_STYLE': {
       const { id, key, value } = action.payload;
       return { ...state, refLayers: { ...state.refLayers, [id]: { ...state.refLayers[id], [key]: value } } };
+    }
+    case 'SET_LAYOUT': {
+      const newLayout = action.payload;
+      const paneProducts = [...state.paneProducts];
+      while (paneProducts.length < newLayout) paneProducts.push('N0B');
+      return { ...state, layout: newLayout, paneProducts: paneProducts.slice(0, newLayout) };
+    }
+    case 'SET_PANE_PRODUCT': {
+      const { pane, product } = action.payload;
+      const paneProducts = [...state.paneProducts];
+      paneProducts[pane] = product;
+      return { ...state, paneProducts };
     }
     default:
       return state;

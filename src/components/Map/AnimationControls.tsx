@@ -37,6 +37,7 @@ const frameCounts = [5, 10, 15, 20];
 export function AnimationControls() {
   const { state, dispatch } = useApp();
   const { frames, animationSpeed, frameCount, currentFrame, isAnimating, selectedSite, radarProduct } = state.radarState;
+  const { layout } = state;
 
   // For display: show site frames if site selected, otherwise mosaic frame info
   const displayFrames = selectedSite ? frames : [];
@@ -55,6 +56,7 @@ export function AnimationControls() {
 
   const handleProductChange = async (product: RadarProductId) => {
     dispatch({ type: 'SET_RADAR_PRODUCT', payload: product });
+    dispatch({ type: 'SET_PANE_PRODUCT', payload: { pane: 0, product } });
     if (selectedSite) {
       try {
         const newFrames = await fetchRadarFrames(selectedSite.id, frameCount, product);
@@ -113,6 +115,33 @@ export function AnimationControls() {
           : (isAnimating ? `${currentFrame + 1}/${totalFrames} — ${ts}` : 'Mosaic — Current')
         }
       </span>
+
+      <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
+        {([1, 2, 4] as const).map(n => (
+          <button
+            key={n}
+            style={{ ...btn, padding: '6px 10px', fontSize: 12, background: layout === n ? 'rgba(0,240,255,0.15)' : 'transparent' }}
+            onClick={() => dispatch({ type: 'SET_LAYOUT', payload: n })}
+            title={`${n} pane${n > 1 ? 's' : ''}`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+
+      <button
+        style={{ ...btn, marginLeft: 8 }}
+        onClick={() => {
+          if (document.fullscreenElement) {
+            document.exitFullscreen();
+          } else {
+            document.documentElement.requestFullscreen();
+          }
+        }}
+        title="Toggle fullscreen"
+      >
+        ⛶
+      </button>
     </div>
   );
 }

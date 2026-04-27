@@ -2,11 +2,17 @@ import { TileLayer, Pane } from 'react-leaflet';
 import { useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
+import type { RadarProductId } from '../../types/radar';
 
-export function SingleSiteRadar() {
+interface SingleSiteRadarProps {
+  productOverride?: RadarProductId;
+}
+
+export function SingleSiteRadar({ productOverride }: SingleSiteRadarProps) {
   const { state, dispatch } = useApp();
   const site = state.radarState.selectedSite;
-  const { frames, animationSpeed, isAnimating, currentFrame, radarProduct } = state.radarState;
+  const { frames, animationSpeed, isAnimating, currentFrame, radarProduct: stateProduct } = state.radarState;
+  const radarProduct = productOverride ?? stateProduct;
 
   const radarGroup = state.layerGroups.find(g => g.id === 'radar');
   const radarOpacity = radarGroup?.opacity ?? 0.7;

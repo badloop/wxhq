@@ -1,5 +1,5 @@
 import { AppProvider, useApp } from './context/AppContext';
-import { RadarMap } from './components/Map/RadarMap';
+import { MapLayout } from './components/Map/MapLayout';
 import { AnimationControls } from './components/Map/AnimationControls';
 import { OverlayManager } from './components/Overlays/OverlayManager';
 import { ContextSidebar } from './components/Sidebar/ContextSidebar';
@@ -14,7 +14,7 @@ function AppInner() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      <RadarMap />
+      <MapLayout />
       <OverlayManager />
       <AnimationControls />
       <ContextSidebar />

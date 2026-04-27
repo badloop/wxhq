@@ -21,6 +21,8 @@ export function extractConfig(state: AppState): PersistableConfig {
     radarProduct: state.radarState.radarProduct,
     mapPoints: state.mapPoints,
     refLayers: state.refLayers,
+    layout: state.layout,
+    paneProducts: state.paneProducts,
   };
 }
 
