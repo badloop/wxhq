@@ -243,7 +243,17 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         newState.mapPoints = cfg.mapPoints;
       }
       if (cfg.refLayers) {
-        newState.refLayers = { ...newState.refLayers, ...cfg.refLayers };
+        // Migrate old boolean format to RefLayerConfig
+        const merged: Record<string, RefLayerConfig> = { ...newState.refLayers };
+        for (const [k, v] of Object.entries(cfg.refLayers)) {
+          if (typeof v === 'boolean') {
+            // Old format: just a boolean — merge enabled into existing defaults
+            if (merged[k]) merged[k] = { ...merged[k], enabled: v };
+          } else if (v && typeof v === 'object') {
+            merged[k] = { ...merged[k], ...(v as RefLayerConfig) };
+          }
+        }
+        newState.refLayers = merged;
       }
 
       return newState;
