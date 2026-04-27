@@ -1,6 +1,6 @@
 import type { IEMBotRawMessage } from '../types/iembot';
 
-const BASE_URL = 'https://weather.im/iembot-json/room';
+const BASE_URL = '/iembot-json/room';
 
 export async function fetchIEMBotMessages(
   room: string,
