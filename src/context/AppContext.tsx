@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef } from 
 import type { Dispatch } from 'react';
 import type { AppState, AppAction } from './AppReducer';
 import { appReducer, initialState } from './AppReducer';
-import { loadConfig, saveConfig, loadIEMBotMessages, saveIEMBotMessages } from '../services/configService';
+import { loadConfig, saveConfig, loadIEMBotMessages, saveIEMBotMessages, loadIEMBotPolygons, saveIEMBotPolygons } from '../services/configService';
 
 const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction> }>({
   state: initialState,
@@ -21,6 +21,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const msgs = loadIEMBotMessages();
     if (msgs.length > 0) {
       s = { ...s, iembotMessages: msgs.filter(m => !s.iembotDismissed.includes(m.seqnum)) };
+    }
+    // Restore persisted IEMBot polygons
+    const polys = loadIEMBotPolygons();
+    if (polys.length > 0) {
+      s = { ...s, mcdPolygons: polys };
     }
     return s;
   });
@@ -47,12 +52,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.radarState.radarProduct !== state.radarState.radarProduct;
 
     const messagesChanged = prev.iembotMessages !== state.iembotMessages;
+    const polygonsChanged = prev.mcdPolygons !== state.mcdPolygons;
 
     prevStateRef.current = state;
 
-    // Persist messages separately (no debounce — they change infrequently)
+    // Persist messages and polygons separately (no debounce — they change infrequently)
     if (messagesChanged) {
       saveIEMBotMessages(state.iembotMessages);
+    }
+    if (polygonsChanged) {
+      saveIEMBotPolygons(state.mcdPolygons);
     }
 
     if (!changed) return;

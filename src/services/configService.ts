@@ -51,6 +51,7 @@ export function loadConfig(): Partial<PersistableConfig> | null {
 }
 
 const MESSAGES_KEY = 'wxhq-iembot-messages';
+const POLYGONS_KEY = 'wxhq-iembot-polygons';
 
 /** Save IEMBot messages to localStorage (separate from config to keep YAML lean) */
 export function saveIEMBotMessages(messages: import('../types/iembot').IEMBotMessage[]): void {
@@ -67,6 +68,26 @@ export function loadIEMBotMessages(): import('../types/iembot').IEMBotMessage[] 
     const raw = localStorage.getItem(MESSAGES_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as import('../types/iembot').IEMBotMessage[];
+  } catch {
+    return [];
+  }
+}
+
+/** Save IEMBot polygons to localStorage */
+export function saveIEMBotPolygons(polygons: import('../context/AppReducer').IEMBotPolygon[]): void {
+  try {
+    localStorage.setItem(POLYGONS_KEY, JSON.stringify(polygons));
+  } catch {
+    // Storage full — silently fail
+  }
+}
+
+/** Load persisted IEMBot polygons */
+export function loadIEMBotPolygons(): import('../context/AppReducer').IEMBotPolygon[] {
+  try {
+    const raw = localStorage.getItem(POLYGONS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as import('../context/AppReducer').IEMBotPolygon[];
   } catch {
     return [];
   }

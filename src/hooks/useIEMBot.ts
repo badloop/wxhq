@@ -169,19 +169,29 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
     poll();
     const id = setInterval(poll, pollInterval);
 
-    // One-time: scan persisted messages for polygons on startup
+    // One-time: scan persisted messages for polygons not yet fetched
     if (!mcdScannedRef.current) {
       mcdScannedRef.current = true;
-      console.log(`[wxhq] Polygon scan: ${state.iembotMessages.length} messages`);
-      for (const msg of state.iembotMessages) {
-        fetchPolygonFromMessage(msg.message, msg.productId).then(poly => {
-          if (poly) {
-            console.log(`[wxhq] Polygon loaded: ${poly.id}`);
-            dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
-          }
-        }).catch(err => {
-          console.error(`[wxhq] Polygon fetch failed for seqnum=${msg.seqnum}:`, err);
-        });
+      const existingIds = new Set(state.mcdPolygons.map(p => p.id));
+      const unfetched = state.iembotMessages.filter(m => {
+        // Skip if polygon already persisted
+        const msgHtml = m.message;
+        const pid = m.productId;
+        // Quick ID extraction without fetching
+        if (pid.includes('SWOMCD')) {
+          const md = msgHtml.match(/md(\d+)\.html/);
+          return md ? !existingIds.has(`mcd-${md[1]}`) : false;
+        }
+        const vt = msgHtml.match(/\/vtec\/f\/\d{4}-O-\w+-K(\w{3})-(\w{2})-(\w)-(\d{4})/);
+        return vt ? !existingIds.has(`vtec-${vt[1]}-${vt[2]}-${vt[3]}-${vt[4]}`) : false;
+      });
+      if (unfetched.length > 0) {
+        console.log(`[wxhq] Polygon scan: ${unfetched.length} messages need polygons`);
+        for (const msg of unfetched) {
+          fetchPolygonFromMessage(msg.message, msg.productId).then(poly => {
+            if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
+          }).catch(() => {});
+        }
       }
     }
 
