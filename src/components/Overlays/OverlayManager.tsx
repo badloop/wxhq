@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CustomOverlayInput } from './CustomOverlayInput';
+import { MapPointInput, MapPointList } from '../Map/MapPointInput';
 import type { LayerGroup } from '../../types/overlays';
 
 const panel: CSSProperties = {
@@ -234,6 +235,12 @@ export function OverlayManager() {
               </LayerGroupRow>
             );
           })}
+
+          {/* Map Points section */}
+          <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
+            <MapPointList />
+            <MapPointInput />
+          </div>
         </div>
       )}
     </div>

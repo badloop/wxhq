@@ -30,6 +30,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.overlays !== state.overlays ||
       prev.layerGroups !== state.layerGroups ||
       prev.iembotConfig !== state.iembotConfig ||
+      prev.mapPoints !== state.mapPoints ||
       prev.radarState.animationSpeed !== state.radarState.animationSpeed ||
       prev.radarState.frameCount !== state.radarState.frameCount;
 

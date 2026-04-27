@@ -3,6 +3,7 @@ import { NexradMarkers } from './NexradMarkers';
 import { NexradMosaic } from './NexradMosaic';
 import { SingleSiteRadar } from './SingleSiteRadar';
 import { OverlayLayers } from '../Overlays/OverlayLayers';
+import { MapPoints } from './MapPoints';
 import { MapClickHandler } from '../../hooks/useMapClick';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,6 +23,7 @@ export function RadarMap() {
       <NexradMosaic />
       <SingleSiteRadar />
       <OverlayLayers />
+      <MapPoints />
       <NexradMarkers />
       <MapClickHandler />
     </MapContainer>

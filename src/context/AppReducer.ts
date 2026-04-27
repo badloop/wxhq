@@ -1,6 +1,7 @@
 import type { NexradSite, RadarState } from '../types/radar';
 import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
+import type { MapPoint } from '../types/mapPoints';
 
 export interface AppState {
   radarState: RadarState;
@@ -13,6 +14,7 @@ export interface AppState {
   iembotConfig: IEMBotConfig;
   iembotPanelOpen: boolean;
   iembotUnread: number;
+  mapPoints: MapPoint[];
 }
 
 export type AppAction =
@@ -35,7 +37,9 @@ export type AppAction =
   | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } }
   | { type: 'SET_GROUP_OPACITY'; payload: { id: string; opacity: number } }
   | { type: 'MOVE_GROUP'; payload: { id: string; direction: 'up' | 'down' } }
-  | { type: 'LOAD_CONFIG'; payload: Partial<PersistableConfig> };
+  | { type: 'LOAD_CONFIG'; payload: Partial<PersistableConfig> }
+  | { type: 'ADD_MAP_POINT'; payload: MapPoint }
+  | { type: 'REMOVE_MAP_POINT'; payload: string };
 
 /** The subset of state that gets persisted to YAML */
 export interface PersistableConfig {
@@ -45,6 +49,7 @@ export interface PersistableConfig {
   iembotRooms: string[];
   animationSpeed: number;
   frameCount: number;
+  mapPoints: MapPoint[];
 }
 
 export const defaultOverlays: OverlayConfig[] = [
@@ -86,6 +91,7 @@ export const initialState: AppState = {
   },
   iembotPanelOpen: false,
   iembotUnread: 0,
+  mapPoints: [],
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -175,9 +181,16 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           }
         }
       }
+      if (cfg.mapPoints) {
+        newState.mapPoints = cfg.mapPoints;
+      }
 
       return newState;
     }
+    case 'ADD_MAP_POINT':
+      return { ...state, mapPoints: [...state.mapPoints, action.payload] };
+    case 'REMOVE_MAP_POINT':
+      return { ...state, mapPoints: state.mapPoints.filter(p => p.id !== action.payload) };
     default:
       return state;
   }
