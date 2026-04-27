@@ -7,12 +7,13 @@ import type { MCDPolygon } from '../context/AppReducer';
  * Returns null if no polygon could be parsed.
  */
 export async function fetchMCDFromMessage(messageHtml: string): Promise<MCDPolygon | null> {
-  // Extract SPC MCD URL from message
-  const urlMatch = messageHtml.match(/href='(https:\/\/www\.spc\.noaa\.gov\/products\/md\/\d+\/md(\d+)\.html)'/);
+  // Extract SPC MCD URL from message (IEMBot uses year path like /md/2026/md0572.html)
+  const urlMatch = messageHtml.match(/href='https:\/\/www\.spc\.noaa\.gov\/products\/md\/(?:\d+\/)?md(\d+)\.html'/);
   if (!urlMatch) return null;
 
-  const url = urlMatch[1];
-  const mdNum = urlMatch[2];
+  const mdNum = urlMatch[1];
+  // Use the non-year URL which is the active/current page
+  const url = `https://www.spc.noaa.gov/products/md/md${mdNum}.html`;
   const id = `MD${mdNum}`;
 
   try {
