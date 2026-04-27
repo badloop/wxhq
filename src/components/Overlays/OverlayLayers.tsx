@@ -1,0 +1,58 @@
+import { useEffect, useState, useRef } from 'react';
+import { GeoJSON } from 'react-leaflet';
+import type { PathOptions } from 'leaflet';
+import type { OverlayConfig } from '../../types/overlays';
+import { useApp } from '../../context/AppContext';
+import { fetchWithRetry } from '../../services/fetchClient';
+
+function OverlayLayer({ config }: { config: OverlayConfig }) {
+  const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [revision, setRevision] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const res = await fetchWithRetry(config.url);
+        const data = await res.json();
+        if (!cancelled) { setGeojson(data); setRevision(r => r + 1); }
+      } catch (err) {
+        console.error(`Overlay fetch failed for ${config.id}:`, err);
+      }
+    };
+
+    load();
+    intervalRef.current = setInterval(load, config.refreshInterval);
+
+    return () => {
+      cancelled = true;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [config.url, config.refreshInterval, config.id]);
+
+  if (!geojson) return null;
+
+  const style = (): PathOptions => ({
+    color: config.color,
+    weight: 2,
+    fillColor: config.color,
+    fillOpacity: 0.15,
+  });
+
+  return <GeoJSON key={`${config.id}-${revision}`} data={geojson} style={style} />;
+}
+
+export function OverlayLayers() {
+  const { state } = useApp();
+  const enabled = state.overlays.filter(o => o.enabled);
+
+  return (
+    <>
+      {enabled.map(config => (
+        <OverlayLayer key={config.id} config={config} />
+      ))}
+    </>
+  );
+}

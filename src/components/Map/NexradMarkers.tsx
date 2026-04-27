@@ -1,14 +1,21 @@
 import { CircleMarker, Tooltip } from 'react-leaflet';
 import { nexradSites } from '../../data/nexradSites';
 import { useApp } from '../../context/AppContext';
+import { fetchRadarFrames } from '../../services/radarApi';
 import type { NexradSite } from '../../types/radar';
 
 export function NexradMarkers() {
   const { state, dispatch } = useApp();
   const selectedId = state.radarState.selectedSite?.id;
 
-  const handleClick = (site: NexradSite) => {
+  const handleClick = async (site: NexradSite) => {
     dispatch({ type: 'SELECT_SITE', payload: site });
+    try {
+      const frames = await fetchRadarFrames(site.id, state.radarState.frameCount);
+      dispatch({ type: 'SET_FRAMES', payload: { frames } });
+    } catch (err) {
+      console.error(`Failed to fetch radar frames for ${site.id}:`, err);
+    }
   };
 
   return (

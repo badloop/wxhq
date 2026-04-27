@@ -6,8 +6,11 @@ export async function fetchWithRetry(url: string, options: RequestInit = {}, ret
   const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
   const headers = new Headers(options.headers);
-  if (!headers.has('User-Agent')) {
-    headers.set('User-Agent', '(WXHQ, contact@example.com)');
+  // Add Accept header for NWS API calls (User-Agent cannot be set in browsers)
+  if (url.includes('api.weather.gov')) {
+    if (!headers.has('Accept')) {
+      headers.set('Accept', 'application/geo+json');
+    }
   }
 
   for (let attempt = 0; attempt < retries; attempt++) {

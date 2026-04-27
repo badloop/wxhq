@@ -33,9 +33,10 @@ export const initialState: AppState = {
     frameCount: 10,
   },
   overlays: [
-    { id: 'watches', name: 'SPC Watches', url: 'https://www.spc.noaa.gov/products/watch/ActiveWW.geojson', enabled: false, refreshInterval: 60000, color: '#ff00aa', category: 'spc' },
+    { id: 'day1', name: 'SPC Day 1 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day1otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc' },
     { id: 'warnings', name: 'NWS Warnings', url: 'https://api.weather.gov/alerts/active?status=actual&message_type=alert', enabled: false, refreshInterval: 30000, color: '#ff4444', category: 'nws' },
-    { id: 'mesoscale', name: 'Mesoscale Discussions', url: 'https://www.spc.noaa.gov/products/md/ActiveMD.geojson', enabled: false, refreshInterval: 120000, color: '#f0ff00', category: 'spc' },
+    { id: 'watches', name: 'NWS Watches', url: 'https://api.weather.gov/alerts/active?event=Tornado%20Watch,Severe%20Thunderstorm%20Watch&status=actual&message_type=alert', enabled: false, refreshInterval: 60000, color: '#ff00aa', category: 'nws' },
+    // TODO: Mesoscale Discussions removed — no reliable public GeoJSON endpoint exists for SPC MDs
   ],
   sidebarOpen: false,
   sidebarLatLon: null,

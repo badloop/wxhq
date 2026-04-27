@@ -2,6 +2,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import { NexradMarkers } from './NexradMarkers';
 import { NexradMosaic } from './NexradMosaic';
 import { SingleSiteRadar } from './SingleSiteRadar';
+import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { MapClickHandler } from '../../hooks/useMapClick';
 import 'leaflet/dist/leaflet.css';
 
@@ -20,6 +21,7 @@ export function RadarMap() {
       />
       <NexradMosaic />
       <SingleSiteRadar />
+      <OverlayLayers />
       <NexradMarkers />
       <MapClickHandler />
     </MapContainer>

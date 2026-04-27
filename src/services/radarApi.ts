@@ -16,8 +16,9 @@ export async function fetchNexradSites(): Promise<NexradSite[]> {
 export async function fetchRadarFrames(siteId: string, count: number = 10): Promise<RadarFrame[]> {
   const end = new Date();
   const start = new Date(end.getTime() - count * 5 * 60 * 1000);
-  const fmt = (d: Date) => d.toISOString().replace('T', ' ').slice(0, 19);
-  const url = `https://mesonet.agron.iastate.edu/json/radar.py?operation=list&radar=${siteId}&product=N0B&start=${encodeURIComponent(fmt(start))}&end=${encodeURIComponent(fmt(end))}`;
+  // IEM API requires 3-char site ID (no K prefix) and timezone-aware timestamps (Z suffix)
+  const apiSiteId = siteId.replace(/^K/, '');
+  const url = `https://mesonet.agron.iastate.edu/json/radar.py?operation=list&radar=${apiSiteId}&product=N0B&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`;
   const res = await fetchWithRetry(url);
   const data = await res.json();
   if (!data.scans) return [];
@@ -29,15 +30,19 @@ export async function fetchRadarFrames(siteId: string, count: number = 10): Prom
 }
 
 export function getRadarTileUrl(siteId: string, timestamp?: string): string {
-  const ts = timestamp ? timestamp.replace(/[- :]/g, '').slice(0, 12) : '0';
+  // Tile URLs use the full site ID (with K prefix)
+  const ts = timestamp ? timestamp.replace(/[- :Z]/g, '').slice(0, 12) : '0';
   return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${siteId}-N0B-${ts}/{z}/{x}/{y}.png`;
 }
+
+/** Minutes-ago values for mosaic history layers: 5, 10, 15, ... 55 */
+export const MOSAIC_MINUTES_AGO = [55, 50, 45, 40, 35, 30, 25, 20, 15, 10, 5, 0] as const;
 
 export function getMosaicTileUrl(minutesAgo: number = 0): string {
   if (minutesAgo === 0) {
     return 'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png';
   }
-  const d = new Date(Date.now() - minutesAgo * 60000);
-  const ts = d.toISOString().replace(/[-:T]/g, '').slice(0, 12);
-  return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-${ts}-900913/{z}/{x}/{y}.png`;
+  // Use predefined IEM mosaic history layers: m05m, m10m, ... m55m
+  const mm = String(minutesAgo).padStart(2, '0');
+  return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-m${mm}m-900913/{z}/{x}/{y}.png`;
 }
