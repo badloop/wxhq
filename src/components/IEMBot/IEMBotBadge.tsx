@@ -1,4 +1,5 @@
 import { useApp } from '../../context/AppContext';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const BADGE_SIZE = 42;
 
@@ -6,6 +7,7 @@ export function IEMBotBadge() {
   const { state, dispatch } = useApp();
   const unread = state.iembotUnread;
   const hasUnread = unread > 0;
+  const mobile = useIsMobile();
 
   return (
     <button
@@ -13,8 +15,8 @@ export function IEMBotBadge() {
       title="IEMBot Monitor"
       style={{
         position: 'fixed',
-        bottom: 64,
-        left: 16,
+        bottom: mobile ? 80 : 64,
+        left: mobile ? 8 : 16,
         zIndex: 1001,
         width: BADGE_SIZE,
         height: BADGE_SIZE,

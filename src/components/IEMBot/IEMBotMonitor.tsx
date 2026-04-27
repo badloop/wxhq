@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MessageList } from './MessageList';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const PRESET_ROOMS = ['botstalk', 'spcchat', 'emergchat', 'pdschat', 'dmgchat'];
 
@@ -11,6 +12,7 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
   const [muted, setMuted] = useState(false);
 
   const config = state.iembotConfig;
+  const mobile = useIsMobile();
 
   if (!state.iembotPanelOpen) return null;
 
@@ -65,10 +67,11 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
     <div
       style={{
         position: 'fixed',
-        bottom: 64,
-        left: 16,
-        width: 450,
-        maxHeight: '60vh',
+        bottom: mobile ? 72 : 64,
+        left: mobile ? 8 : 16,
+        right: mobile ? 8 : undefined,
+        width: mobile ? undefined : 450,
+        maxHeight: mobile ? '70vh' : '60vh',
         background: 'rgba(10, 10, 15, 0.95)',
         border: '1px solid rgba(0, 240, 255, 0.3)',
         boxShadow: '0 0 20px rgba(0, 240, 255, 0.1)',
@@ -176,7 +179,7 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
       </div>
 
       {/* Messages */}
-      <div style={{ overflowY: 'auto', height: 400 }}>
+      <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
         <MessageList messages={state.iembotMessages} filter={filter} dispatch={dispatch} />
       </div>
 

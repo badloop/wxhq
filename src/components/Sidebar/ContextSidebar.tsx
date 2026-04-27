@@ -8,6 +8,7 @@ import { Hodograph } from './Hodograph';
 import { SoundingParams } from './SoundingParams';
 import { OverlayDetails } from './OverlayDetails';
 import { LayersPanel } from '../Overlays/LayersPanel';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 /** Prevent child render errors from blanking the entire app */
 class SidebarErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -205,6 +206,9 @@ function LocationContext({ lat, lon }: { lat: number; lon: number }) {
 export function ContextSidebar() {
   const { state, dispatch } = useApp();
   const { sidebarOpen, sidebarLatLon } = state;
+  const mobile = useIsMobile();
+  const width = mobile ? window.innerWidth : SIDEBAR_WIDTH;
+  const barHeight = mobile ? 72 : 56; // mobile bar is taller (two rows)
 
   return (
     <>
@@ -212,7 +216,8 @@ export function ContextSidebar() {
       <div
         style={{
           ...drawerHandle,
-          right: sidebarOpen ? SIDEBAR_WIDTH : 0,
+          right: sidebarOpen ? width : 0,
+          bottom: barHeight,
         }}
         onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
         title={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
@@ -223,13 +228,12 @@ export function ContextSidebar() {
       {/* Sidebar panel */}
       <div style={{
         ...panelBase,
-        transform: sidebarOpen ? 'translateX(0)' : `translateX(${SIDEBAR_WIDTH}px)`,
+        width,
+        bottom: barHeight,
+        transform: sidebarOpen ? 'translateX(0)' : `translateX(${width}px)`,
       }}>
         <div style={scrollArea}>
-          {/* Layers panel */}
           <LayersPanel />
-
-          {/* Location context (sounding, overlays) */}
           {sidebarLatLon && (
             <LocationContext lat={sidebarLatLon[0]} lon={sidebarLatLon[1]} />
           )}

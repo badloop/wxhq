@@ -139,3 +139,24 @@ input[type="range"]::-moz-range-thumb {
   border: none;
   box-shadow: 0 0 4px var(--neon-cyan);
 }
+
+/* Mobile: larger touch targets, disable scanlines for perf */
+@media (max-width: 767px) {
+  #root::after {
+    display: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Hide leaflet attribution on mobile to save space */
+  .leaflet-control-attribution {
+    display: none !important;
+  }
+}

@@ -5,10 +5,13 @@ import { MapSync } from './MapSyncContext';
 import type { MapSyncContext } from './MapSyncContext';
 import type { RadarProductId } from '../../types/radar';
 import type { Map as LeafletMap } from 'leaflet';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export function MapLayout() {
   const { state, dispatch } = useApp();
   const { layout, paneProducts } = state;
+  const mobile = useIsMobile();
+  const effectiveLayout = mobile ? 1 : layout;
   const mapsRef = useRef<Map<number, LeafletMap>>(new Map());
   const syncingRef = useRef(false);
 
@@ -43,22 +46,22 @@ export function MapLayout() {
         width: '100%',
         height: '100%',
         display: 'grid',
-        gridTemplateColumns: layout >= 2 ? '1fr 1fr' : '1fr',
-        gridTemplateRows: layout === 4 ? '1fr 1fr' : '1fr',
+        gridTemplateColumns: effectiveLayout >= 2 ? '1fr 1fr' : '1fr',
+        gridTemplateRows: effectiveLayout === 4 ? '1fr 1fr' : '1fr',
         gap: 0,
       }}>
-        {Array.from({ length: layout }, (_, i) => (
+        {Array.from({ length: effectiveLayout }, (_, i) => (
           <div key={i} style={{
             position: 'relative',
             overflow: 'hidden',
-            borderRight: i % 2 === 0 && layout >= 2 ? '1px solid rgba(0,240,255,0.3)' : undefined,
-            borderBottom: i < 2 && layout === 4 ? '1px solid rgba(0,240,255,0.3)' : undefined,
+            borderRight: i % 2 === 0 && effectiveLayout >= 2 ? '1px solid rgba(0,240,255,0.3)' : undefined,
+            borderBottom: i < 2 && effectiveLayout === 4 ? '1px solid rgba(0,240,255,0.3)' : undefined,
           }}>
             <RadarPane
               paneIndex={i}
               radarProduct={paneProducts[i] || 'N0B'}
               onProductChange={(p: RadarProductId) => dispatch({ type: 'SET_PANE_PRODUCT', payload: { pane: i, product: p } })}
-              showControls={layout > 1}
+              showControls={effectiveLayout > 1}
             />
           </div>
         ))}
