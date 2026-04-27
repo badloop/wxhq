@@ -61,6 +61,7 @@ function LayerGroupRow({
 }) {
   const { dispatch } = useApp();
   const dragRef = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <div
@@ -71,9 +72,12 @@ function LayerGroupRow({
       }}
     >
       {/* Group header: name, arrows, opacity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: collapsed ? 0 : 4, cursor: 'pointer' }}
+        onClick={() => setCollapsed(!collapsed)}
+      >
         {/* Reorder arrows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }} onClick={e => e.stopPropagation()}>
           <button
             onClick={() => dispatch({ type: 'MOVE_GROUP', payload: { id: group.id, direction: 'up' } })}
             disabled={isLast}
@@ -123,25 +127,138 @@ function LayerGroupRow({
         <span style={{ color: '#606070', fontSize: 11 }}>
           {Math.round(group.opacity * 100)}%
         </span>
+
+        <span style={{ color: '#606070', fontSize: 9 }}>
+          {collapsed ? '▶' : '▼'}
+        </span>
       </div>
 
-      {/* Opacity slider */}
-      <div style={{ marginBottom: 6 }}>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={Math.round(group.opacity * 100)}
-          onChange={e => dispatch({
-            type: 'SET_GROUP_OPACITY',
-            payload: { id: group.id, opacity: parseInt(e.target.value) / 100 },
-          })}
-          style={sliderStyle}
-        />
-      </div>
+      {/* Collapsible contents */}
+      {!collapsed && (
+        <>
+          {/* Opacity slider */}
+          <div style={{ marginBottom: 6 }}>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(group.opacity * 100)}
+              onChange={e => dispatch({
+                type: 'SET_GROUP_OPACITY',
+                payload: { id: group.id, opacity: parseInt(e.target.value) / 100 },
+              })}
+              style={sliderStyle}
+            />
+          </div>
 
-      {/* Group contents (checkboxes, etc.) */}
-      {children}
+          {/* Group contents (checkboxes, etc.) */}
+          {children}
+        </>
+      )}
+    </div>
+  );
+}
+
+const REF_LAYER_DEFS = [
+  { key: 'stateLines', label: 'State Lines' },
+  { key: 'countyLines', label: 'County Lines' },
+  { key: 'radarSites', label: 'Radar Sites' },
+] as const;
+
+function RefLayerSection() {
+  const { state, dispatch } = useApp();
+  const [collapsed, setCollapsed] = useState(true);
+
+  return (
+    <div style={{ padding: '6px 12px', borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: collapsed ? 0 : 6 }}
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <span style={{ color: '#00f0ff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', flex: 1 }}>
+          Reference
+        </span>
+        <span style={{ color: '#606070', fontSize: 9 }}>{collapsed ? '▶' : '▼'}</span>
+      </div>
+      {!collapsed && REF_LAYER_DEFS.map(ref => {
+        const cfg = state.refLayers[ref.key];
+        if (!cfg) return null;
+        return (
+          <div key={ref.key} style={{ marginBottom: 6, paddingLeft: 20 }}>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: '#e0e0e0', fontSize: 12, cursor: 'pointer', marginBottom: 3,
+            }}>
+              <input
+                type="checkbox"
+                checked={cfg.enabled}
+                onChange={() => dispatch({ type: 'TOGGLE_REF_LAYER', payload: ref.key })}
+                style={{ accentColor: cfg.color }}
+              />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color, display: 'inline-block', flexShrink: 0 }} />
+              {ref.label}
+            </label>
+            {cfg.enabled && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingLeft: 20, marginTop: 2 }}>
+                <input
+                  type="color"
+                  value={cfg.color}
+                  onChange={e => dispatch({ type: 'SET_REF_LAYER_STYLE', payload: { id: ref.key, key: 'color', value: e.target.value } })}
+                  title="Stroke color"
+                  style={{ width: 20, height: 16, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+                />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#808090', fontSize: 10 }}>
+                  W
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={5}
+                    step={0.5}
+                    value={cfg.weight}
+                    onChange={e => dispatch({ type: 'SET_REF_LAYER_STYLE', payload: { id: ref.key, key: 'weight', value: parseFloat(e.target.value) } })}
+                    style={{ width: 50, height: 3, accentColor: '#00f0ff' }}
+                  />
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#808090', fontSize: 10 }}>
+                  Op
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(cfg.opacity * 100)}
+                    onChange={e => dispatch({ type: 'SET_REF_LAYER_STYLE', payload: { id: ref.key, key: 'opacity', value: parseInt(e.target.value) / 100 } })}
+                    style={{ width: 50, height: 3, accentColor: '#00f0ff' }}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PointsSection() {
+  const [collapsed, setCollapsed] = useState(true);
+
+  return (
+    <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px' }}
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <span style={{ color: '#00f0ff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', flex: 1 }}>
+          Points
+        </span>
+        <span style={{ color: '#606070', fontSize: 9 }}>{collapsed ? '▶' : '▼'}</span>
+      </div>
+      {!collapsed && (
+        <>
+          <MapPointList />
+          <MapPointInput />
+        </>
+      )}
     </div>
   );
 }
@@ -237,42 +354,10 @@ export function OverlayManager() {
           })}
 
           {/* Reference layers */}
-          <div style={{ padding: '6px 12px', borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
-            <div style={{ color: '#00f0ff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
-              Reference
-            </div>
-            {([
-              { key: 'stateLines', label: 'State Lines', color: '#888' },
-              { key: 'countyLines', label: 'County Lines', color: '#555' },
-              { key: 'radarSites', label: 'Radar Sites', color: '#00f0ff' },
-            ] as const).map(ref => (
-              <label key={ref.key} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                color: '#e0e0e0',
-                fontSize: 12,
-                marginBottom: 3,
-                cursor: 'pointer',
-                paddingLeft: 20,
-              }}>
-                <input
-                  type="checkbox"
-                  checked={!!state.refLayers[ref.key]}
-                  onChange={() => dispatch({ type: 'TOGGLE_REF_LAYER', payload: ref.key })}
-                  style={{ accentColor: ref.color }}
-                />
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ref.color, display: 'inline-block', flexShrink: 0 }} />
-                {ref.label}
-              </label>
-            ))}
-          </div>
+          <RefLayerSection />
 
           {/* Map Points section */}
-          <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
-            <MapPointList />
-            <MapPointInput />
-          </div>
+          <PointsSection />
         </div>
       )}
     </div>

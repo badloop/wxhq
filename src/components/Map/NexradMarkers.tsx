@@ -8,9 +8,9 @@ export function NexradMarkers() {
   const { state, dispatch } = useApp();
   const selectedId = state.radarState.selectedSite?.id;
 
-  if (!state.refLayers.radarSites && !selectedId) return null;
+  if (!state.refLayers.radarSites?.enabled && !selectedId) return null;
 
-  const showAll = state.refLayers.radarSites;
+  const showAll = state.refLayers.radarSites?.enabled;
 
   const handleClick = async (site: NexradSite) => {
     dispatch({ type: 'SELECT_SITE', payload: site });

@@ -3,6 +3,13 @@ import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 import type { MapPoint } from '../types/mapPoints';
 
+export interface RefLayerConfig {
+  enabled: boolean;
+  color: string;
+  weight: number;
+  opacity: number;
+}
+
 export interface AppState {
   radarState: RadarState;
   overlays: OverlayConfig[];
@@ -17,7 +24,7 @@ export interface AppState {
   iembotLastSeqnums: Record<string, number>;
   iembotDismissed: number[];
   mapPoints: MapPoint[];
-  refLayers: Record<string, boolean>;
+  refLayers: Record<string, RefLayerConfig>;
 }
 
 export type AppAction =
@@ -47,7 +54,8 @@ export type AppAction =
   | { type: 'LOAD_CONFIG'; payload: Partial<PersistableConfig> }
   | { type: 'ADD_MAP_POINT'; payload: MapPoint }
   | { type: 'REMOVE_MAP_POINT'; payload: string }
-  | { type: 'TOGGLE_REF_LAYER'; payload: string };
+  | { type: 'TOGGLE_REF_LAYER'; payload: string }
+  | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } };
 
 /** The subset of state that gets persisted to YAML */
 export interface PersistableConfig {
@@ -62,7 +70,7 @@ export interface PersistableConfig {
   frameCount: number;
   radarProduct: RadarProductId;
   mapPoints: MapPoint[];
-  refLayers: Record<string, boolean>;
+  refLayers: Record<string, RefLayerConfig>;
 }
 
 export const defaultOverlays: OverlayConfig[] = [
@@ -110,9 +118,9 @@ export const initialState: AppState = {
   iembotDismissed: [],
   mapPoints: [],
   refLayers: {
-    stateLines: true,
-    countyLines: false,
-    radarSites: true,
+    stateLines: { enabled: true, color: '#888888', weight: 1, opacity: 0.6 },
+    countyLines: { enabled: false, color: '#555555', weight: 0.5, opacity: 0.4 },
+    radarSites: { enabled: true, color: '#00f0ff', weight: 1, opacity: 1 },
   },
 };
 
@@ -245,7 +253,11 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'REMOVE_MAP_POINT':
       return { ...state, mapPoints: state.mapPoints.filter(p => p.id !== action.payload) };
     case 'TOGGLE_REF_LAYER':
-      return { ...state, refLayers: { ...state.refLayers, [action.payload]: !state.refLayers[action.payload] } };
+      return { ...state, refLayers: { ...state.refLayers, [action.payload]: { ...state.refLayers[action.payload], enabled: !state.refLayers[action.payload]?.enabled } } };
+    case 'SET_REF_LAYER_STYLE': {
+      const { id, key, value } = action.payload;
+      return { ...state, refLayers: { ...state.refLayers, [id]: { ...state.refLayers[id], [key]: value } } };
+    }
     default:
       return state;
   }
