@@ -20,6 +20,7 @@ export function extractConfig(state: AppState): PersistableConfig {
     frameCount: state.radarState.frameCount,
     radarProduct: state.radarState.radarProduct,
     mapPoints: state.mapPoints,
+    refLayers: state.refLayers,
   };
 }
 

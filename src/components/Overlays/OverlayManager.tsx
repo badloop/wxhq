@@ -236,6 +236,38 @@ export function OverlayManager() {
             );
           })}
 
+          {/* Reference layers */}
+          <div style={{ padding: '6px 12px', borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
+            <div style={{ color: '#00f0ff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+              Reference
+            </div>
+            {([
+              { key: 'stateLines', label: 'State Lines', color: '#888' },
+              { key: 'countyLines', label: 'County Lines', color: '#555' },
+              { key: 'radarSites', label: 'Radar Sites', color: '#00f0ff' },
+            ] as const).map(ref => (
+              <label key={ref.key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                color: '#e0e0e0',
+                fontSize: 12,
+                marginBottom: 3,
+                cursor: 'pointer',
+                paddingLeft: 20,
+              }}>
+                <input
+                  type="checkbox"
+                  checked={!!state.refLayers[ref.key]}
+                  onChange={() => dispatch({ type: 'TOGGLE_REF_LAYER', payload: ref.key })}
+                  style={{ accentColor: ref.color }}
+                />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: ref.color, display: 'inline-block', flexShrink: 0 }} />
+                {ref.label}
+              </label>
+            ))}
+          </div>
+
           {/* Map Points section */}
           <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
             <MapPointList />

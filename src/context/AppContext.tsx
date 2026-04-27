@@ -33,6 +33,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.iembotLastSeqnums !== state.iembotLastSeqnums ||
       prev.iembotDismissed !== state.iembotDismissed ||
       prev.mapPoints !== state.mapPoints ||
+      prev.refLayers !== state.refLayers ||
       prev.radarState.animationSpeed !== state.radarState.animationSpeed ||
       prev.radarState.frameCount !== state.radarState.frameCount ||
       prev.radarState.radarProduct !== state.radarState.radarProduct;

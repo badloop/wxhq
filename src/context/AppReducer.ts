@@ -17,6 +17,7 @@ export interface AppState {
   iembotLastSeqnums: Record<string, number>;
   iembotDismissed: number[];
   mapPoints: MapPoint[];
+  refLayers: Record<string, boolean>;
 }
 
 export type AppAction =
@@ -45,7 +46,8 @@ export type AppAction =
   | { type: 'MOVE_GROUP'; payload: { id: string; direction: 'up' | 'down' } }
   | { type: 'LOAD_CONFIG'; payload: Partial<PersistableConfig> }
   | { type: 'ADD_MAP_POINT'; payload: MapPoint }
-  | { type: 'REMOVE_MAP_POINT'; payload: string };
+  | { type: 'REMOVE_MAP_POINT'; payload: string }
+  | { type: 'TOGGLE_REF_LAYER'; payload: string };
 
 /** The subset of state that gets persisted to YAML */
 export interface PersistableConfig {
@@ -60,6 +62,7 @@ export interface PersistableConfig {
   frameCount: number;
   radarProduct: RadarProductId;
   mapPoints: MapPoint[];
+  refLayers: Record<string, boolean>;
 }
 
 export const defaultOverlays: OverlayConfig[] = [
@@ -106,6 +109,11 @@ export const initialState: AppState = {
   iembotLastSeqnums: {},
   iembotDismissed: [],
   mapPoints: [],
+  refLayers: {
+    stateLines: true,
+    countyLines: false,
+    radarSites: true,
+  },
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -226,6 +234,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (cfg.mapPoints) {
         newState.mapPoints = cfg.mapPoints;
       }
+      if (cfg.refLayers) {
+        newState.refLayers = { ...newState.refLayers, ...cfg.refLayers };
+      }
 
       return newState;
     }
@@ -233,6 +244,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, mapPoints: [...state.mapPoints, action.payload] };
     case 'REMOVE_MAP_POINT':
       return { ...state, mapPoints: state.mapPoints.filter(p => p.id !== action.payload) };
+    case 'TOGGLE_REF_LAYER':
+      return { ...state, refLayers: { ...state.refLayers, [action.payload]: !state.refLayers[action.payload] } };
     default:
       return state;
   }
