@@ -91,7 +91,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
     case 'CLEAR_IEMBOT':
-      return { ...state, iembotMessages: [] };
+      return { ...state, iembotMessages: [], iembotUnread: 0 };
+    case 'TOGGLE_IEMBOT_PANEL':
+      return { ...state, iembotPanelOpen: !state.iembotPanelOpen, iembotUnread: state.iembotPanelOpen ? state.iembotUnread : 0 };
+    case 'MARK_IEMBOT_READ':
+      return { ...state, iembotUnread: 0 };
+    case 'SET_IEMBOT_ROOMS':
+      return { ...state, iembotConfig: { ...state.iembotConfig, rooms: action.payload } };
     case 'ADD_OVERLAY':
       return { ...state, overlays: [...state.overlays, action.payload] };
     default:

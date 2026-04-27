@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { useIEMBot } from '../../hooks/useIEMBot';
 import { MessageList } from './MessageList';
 
 const PRESET_ROOMS = ['botstalk', 'spcchat', 'emergchat', 'pdschat', 'dmgchat'];
 
-export function IEMBotMonitor() {
+export function IEMBotMonitor({ isConnected }: { isConnected: boolean }) {
   const { state, dispatch } = useApp();
   const [filter, setFilter] = useState('');
   const [roomInput, setRoomInput] = useState('');
 
   const config = state.iembotConfig;
-  const { isConnected } = useIEMBot(config.rooms, config.pollInterval);
 
   if (!state.iembotPanelOpen) return null;
 
