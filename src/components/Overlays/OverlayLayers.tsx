@@ -53,6 +53,7 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
   if (!geojson) return null;
 
   // SPC outlook features have 'stroke' and 'fill' properties with correct risk-level colors
+  // NWS warnings: color by event type
   const style = (feature?: GeoJSON.Feature): PathOptions => {
     const props = feature?.properties;
     if (props?.stroke || props?.fill) {
@@ -62,6 +63,15 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
         fillColor: props.fill || config.color,
         fillOpacity: 0.25,
       };
+    }
+    // NWS event-based coloring
+    if (config.category === 'nws' && props?.event) {
+      const evt = (props.event as string).toLowerCase();
+      let c = config.color;
+      if (evt.includes('tornado')) c = '#ff69b4';
+      else if (evt.includes('thunderstorm')) c = '#ff0000';
+      else if (evt.includes('flood')) c = '#00cc00';
+      return { color: c, weight: 2, fillColor: c, fillOpacity: 0.2 };
     }
     return {
       color: config.color,
