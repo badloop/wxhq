@@ -123,7 +123,7 @@ export const initialState: AppState = {
     isAnimating: false,
     animationSpeed: 500,
     frameCount: 10,
-    radarProduct: 'N0B',
+    radarProduct: 'sr_bref',
   },
   overlays: defaultOverlays,
   overlayGeoJSON: {},
@@ -150,7 +150,7 @@ export const initialState: AppState = {
   },
   mcdPolygons: [],
   layout: 1,
-  paneProducts: ['N0B'],
+  paneProducts: ['sr_bref'],
 };
 
 /** Extract the polygon ID that would have been generated for this message */
@@ -327,7 +327,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.paneProducts) {
         const validIds = RADAR_PRODUCTS.map(p => p.id) as readonly string[];
-        newState.paneProducts = cfg.paneProducts.map(p => validIds.includes(p) ? p : 'N0B') as RadarProductId[];
+        newState.paneProducts = cfg.paneProducts.map(p => validIds.includes(p) ? p : 'sr_bref') as RadarProductId[];
       }
 
       return newState;
@@ -345,7 +345,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_LAYOUT': {
       const newLayout = action.payload;
       const paneProducts = [...state.paneProducts];
-      while (paneProducts.length < newLayout) paneProducts.push('N0B');
+      while (paneProducts.length < newLayout) paneProducts.push('sr_bref');
       return { ...state, layout: newLayout, paneProducts: paneProducts.slice(0, newLayout) };
     }
     case 'SET_PANE_PRODUCT': {

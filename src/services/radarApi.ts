@@ -13,25 +13,55 @@ export async function fetchNexradSites(): Promise<NexradSite[]> {
   }));
 }
 
-export async function fetchRadarFrames(siteId: string, count: number = 10, product: RadarProductId = 'N0B'): Promise<RadarFrame[]> {
-  const end = new Date();
-  const start = new Date(end.getTime() - count * 5 * 60 * 1000);
-  const apiSiteId = siteId.replace(/^K/, '');
-  const url = `https://mesonet.agron.iastate.edu/json/radar.py?operation=list&radar=${apiSiteId}&product=${product}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`;
-  const res = await fetchWithRetry(url);
-  const data = await res.json();
-  if (!data.scans) return [];
-  return data.scans.map((s: { ts: string }) => ({
-    url: getRadarTileUrl(siteId, product, s.ts),
-    timestamp: s.ts,
-    product,
-  }));
+/** Build the NCEP GeoServer WMS workspace name from site ID (e.g. KLSX -> klsx) */
+function ncepWorkspace(siteId: string): string {
+  return siteId.toLowerCase();
 }
 
-export function getRadarTileUrl(siteId: string, product: RadarProductId = 'N0B', timestamp?: string): string {
-  const ridgeSiteId = siteId.replace(/^K/, '');
-  const ts = timestamp ? timestamp.replace(/\D/g, '').slice(0, 12) : '0';
-  return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-${product}-${ts}/{z}/{x}/{y}.png`;
+/** Build the NCEP WMS layer name for a given site and product */
+export function ncepLayerName(siteId: string, product: RadarProductId): string {
+  return `${ncepWorkspace(siteId)}_${product}`;
+}
+
+/** NCEP GeoServer WMS base URL for a site */
+export function ncepWmsUrl(siteId: string): string {
+  return `https://opengeo.ncep.noaa.gov/geoserver/${ncepWorkspace(siteId)}/ows`;
+}
+
+/**
+ * Fetch available radar frames from NCEP GeoServer WMS GetCapabilities.
+ * Parses the TIME dimension extent for the given product layer.
+ */
+export async function fetchRadarFrames(siteId: string, count: number = 10, product: RadarProductId = 'sr_bref'): Promise<RadarFrame[]> {
+  const ws = ncepWorkspace(siteId);
+  const layer = `${ws}_${product}`;
+  const url = `https://opengeo.ncep.noaa.gov/geoserver/${ws}/ows?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetCapabilities`;
+
+  try {
+    const res = await fetchWithRetry(url, {}, 1);
+    const text = await res.text();
+
+    // Find the layer section and extract TIME extent
+    const layerIdx = text.indexOf(layer);
+    if (layerIdx < 0) return [];
+
+    const chunk = text.slice(layerIdx, layerIdx + 3000);
+    const timeMatch = chunk.match(/<Extent name="time"[^>]*>([^<]+)<\/Extent>/);
+    if (!timeMatch) return [];
+
+    const allTimes = timeMatch[1].split(',').map(t => t.trim());
+    // Take the last N frames
+    const frames = allTimes.slice(-count);
+
+    return frames.map(ts => ({
+      url: ts, // We'll use the timestamp directly with WMS TIME param
+      timestamp: ts,
+      product,
+    }));
+  } catch (err) {
+    console.error(`[wxhq] Failed to fetch NCEP radar frames for ${siteId}/${product}:`, err);
+    return [];
+  }
 }
 
 /** Minutes-ago values for mosaic history layers: 5, 10, 15, ... 55 */

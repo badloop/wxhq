@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { TileLayer, Pane } from 'react-leaflet';
+import { WMSTileLayer, Pane } from 'react-leaflet';
 import { useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
-import { getRadarTileUrl } from '../../services/radarApi';
+import { ncepWmsUrl, ncepLayerName } from '../../services/radarApi';
 import type { RadarProductId } from '../../types/radar';
 
 interface SingleSiteRadarProps {
@@ -35,31 +35,32 @@ export function SingleSiteRadar({ productOverride, paneIndex = 0 }: SingleSiteRa
     onFrame,
   );
 
-  // Build tile URLs for this pane's product from shared timestamps
-  const paneUrls = useMemo(() => {
-    if (!site || frames.length === 0) return [];
-    return frames.map(f => getRadarTileUrl(site.id, radarProduct, f.timestamp));
-  }, [site, frames, radarProduct]);
+  const wmsUrl = useMemo(() => site ? ncepWmsUrl(site.id) : '', [site]);
+  const layerName = useMemo(() => site ? ncepLayerName(site.id, radarProduct) : '', [site, radarProduct]);
 
   if (!site) return null;
 
-  const ridgeSiteId = site.id.replace(/^K/, '');
-
-  if (isAnimating && paneUrls.length > 0) {
+  if (isAnimating && frames.length > 0) {
     // Only render current frame + next frame (for preloading) instead of all frames
-    const visibleIndices = new Set([currentFrame, (currentFrame + 1) % paneUrls.length]);
+    const visibleIndices = new Set([currentFrame, (currentFrame + 1) % frames.length]);
 
     return (
       <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
-        {paneUrls.map((url, i) => {
+        {frames.map((frame, i) => {
           if (!visibleIndices.has(i)) return null;
           return (
-            <TileLayer
-              key={`ridge-${site.id}-${radarProduct}-${i}`}
-              url={url}
+            <WMSTileLayer
+              key={`ncep-${site.id}-${radarProduct}-${i}`}
+              url={wmsUrl}
+              params={{
+                layers: layerName,
+                format: 'image/png',
+                transparent: true,
+                version: '1.1.1',
+                time: frame.timestamp,
+              } as any}
               opacity={i === currentFrame ? radarOpacity : 0}
               maxZoom={18}
-              maxNativeZoom={16}
               pane="radar-pane"
             />
           );
@@ -68,15 +69,21 @@ export function SingleSiteRadar({ productOverride, paneIndex = 0 }: SingleSiteRa
     );
   }
 
+  // Live view — no TIME param uses latest available
   return (
     <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
-      <TileLayer
-        url={`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${ridgeSiteId}-${radarProduct}-0/{z}/{x}/{y}.png`}
+      <WMSTileLayer
+        url={wmsUrl}
+        params={{
+          layers: layerName,
+          format: 'image/png',
+          transparent: true,
+          version: '1.1.1',
+        } as any}
         opacity={radarOpacity}
         maxZoom={18}
-        maxNativeZoom={16}
-        attribution={`RIDGE ${site.id} ${radarProduct} &copy; IEM`}
-        key={`ridge-${site.id}-${radarProduct}-live`}
+        attribution={`NCEP ${site.id} ${radarProduct}`}
+        key={`ncep-${site.id}-${radarProduct}-live`}
         pane="radar-pane"
       />
     </Pane>
