@@ -42,7 +42,7 @@ async function sendTelegramNotification(messages: Array<{ room: string; text: st
       return `${prefix}\n${m.text}`;
     });
     const body = `IEMBot (${messages.length} new):\n\n${lines.join('\n\n')}`;
-    await fetch('http://localhost:5010/send', {
+    await fetch('/telegram-api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: body }),

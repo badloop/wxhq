@@ -11,6 +11,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/telegram-api': {
+        target: 'http://localhost:5010',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/telegram-api/, ''),
+      },
     },
   },
 })
