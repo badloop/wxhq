@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff00aa;
+  --neon-green: #39ff14;
+  --neon-yellow: #f0ff00;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --border-glow: 0 0 5px var(--neon-cyan), 0 0 10px rgba(0, 240, 255, 0.3);
+  --border-glow-magenta: 0 0 5px var(--neon-magenta), 0 0 10px rgba(255, 0, 170, 0.3);
+  --border-glow-green: 0 0 5px var(--neon-green), 0 0 10px rgba(57, 255, 20, 0.3);
+  --font-heading: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+}
+
+/* Scanline overlay */
+#root::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 240, 255, 0.015) 2px,
+    rgba(0, 240, 255, 0.015) 4px
+  );
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 3px;
+  box-shadow: 0 0 4px var(--neon-cyan);
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+  background: var(--bg-primary) !important;
+  font-family: var(--font-mono) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--bg-secondary) !important;
+  color: var(--neon-cyan) !important;
+  border-color: rgba(0, 240, 255, 0.3) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(10, 10, 15, 0.8) !important;
+  color: var(--text-muted) !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a {
+  color: var(--neon-cyan) !important;
+}
+
+.leaflet-tooltip {
+  background: var(--bg-secondary) !important;
+  color: var(--neon-cyan) !important;
+  border: 1px solid var(--neon-cyan) !important;
+  box-shadow: var(--border-glow) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 12px !important;
+}
+.leaflet-tooltip::before {
+  border-top-color: var(--neon-cyan) !important;
+}
+
+/* Glow panel utility */
+.glow-panel {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: var(--border-glow);
+  border-radius: 4px;
+}
+
+button {
+  font-family: var(--font-heading);
+  cursor: pointer;
+}
