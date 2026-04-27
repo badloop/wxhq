@@ -335,6 +335,30 @@ const sectionHeaderStyle: CSSProperties = {
   borderBottom: '1px solid rgba(0, 240, 255, 0.2)',
 };
 
+/** SPC categorical risk severity order (highest index = highest severity) */
+const SPC_SEVERITY_ORDER = ['TSTM', 'MRGL', 'SLGT', 'ENH', 'MDT', 'HIGH'];
+
+function spcSeverityRank(feature: GeoJSON.Feature): number {
+  const label = feature.properties?.LABEL || '';
+  const idx = SPC_SEVERITY_ORDER.indexOf(label);
+  return idx >= 0 ? idx : -1;
+}
+
+/** For SPC overlays, keep only the highest-severity matching feature */
+function filterHighestSPCSeverity(features: GeoJSON.Feature[]): GeoJSON.Feature[] {
+  if (features.length <= 1) return features;
+  let maxRank = -1;
+  let best: GeoJSON.Feature | null = null;
+  for (const f of features) {
+    const rank = spcSeverityRank(f);
+    if (rank > maxRank) {
+      maxRank = rank;
+      best = f;
+    }
+  }
+  return best ? [best] : features;
+}
+
 export function OverlayDetails({ lat, lon, overlays, overlayData }: OverlayDetailsProps) {
   const enabledOverlays = overlays.filter(o => o.enabled);
   const hits: { config: OverlayConfig; features: GeoJSON.Feature[] }[] = [];
@@ -342,7 +366,11 @@ export function OverlayDetails({ lat, lon, overlays, overlayData }: OverlayDetai
   for (const config of enabledOverlays) {
     const fc = overlayData[config.id];
     if (!fc?.features) continue;
-    const matching = fc.features.filter(f => featureContainsPoint(f, lat, lon));
+    let matching = fc.features.filter(f => featureContainsPoint(f, lat, lon));
+    // For SPC outlooks, only show the highest severity level
+    if (config.category === 'spc' && matching.length > 1) {
+      matching = filterHighestSPCSeverity(matching);
+    }
     if (matching.length > 0) hits.push({ config, features: matching });
   }
 
