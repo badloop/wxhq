@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
-import { GeoJSON } from 'react-leaflet';
+import { GeoJSON, useMap, Pane } from 'react-leaflet';
 import type { PathOptions } from 'leaflet';
 import type { OverlayConfig } from '../../types/overlays';
 import { useApp } from '../../context/AppContext';
 import { fetchWithRetry } from '../../services/fetchClient';
 import { fetchActiveMCDs } from '../../services/mcdApi';
 
-function OverlayLayer({ config }: { config: OverlayConfig }) {
+function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOpacity: number }) {
   const { dispatch } = useApp();
   const [geojson, setGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
   const [revision, setRevision] = useState(0);
@@ -23,8 +23,6 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
         } else {
           const res = await fetchWithRetry(config.url);
           const raw = await res.json();
-          // NWS alerts API returns { features: [...] } but with extra wrapper properties
-          // Normalize to a standard FeatureCollection
           if (raw.features) {
             data = { type: 'FeatureCollection', features: raw.features };
           } else {
@@ -52,8 +50,6 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
 
   if (!geojson) return null;
 
-  // SPC outlook features have 'stroke' and 'fill' properties with correct risk-level colors
-  // NWS warnings: color by event type
   const style = (feature?: GeoJSON.Feature): PathOptions => {
     const props = feature?.properties;
     if (props?.stroke || props?.fill) {
@@ -61,38 +57,95 @@ function OverlayLayer({ config }: { config: OverlayConfig }) {
         color: props.stroke || config.color,
         weight: 2,
         fillColor: props.fill || config.color,
-        fillOpacity: 0.25,
+        fillOpacity: 0.25 * groupOpacity,
+        opacity: groupOpacity,
       };
     }
-    // NWS event-based coloring
     if (config.category === 'nws' && props?.event) {
       const evt = (props.event as string).toLowerCase();
       let c = config.color;
       if (evt.includes('tornado')) c = '#ff69b4';
       else if (evt.includes('thunderstorm')) c = '#ff0000';
       else if (evt.includes('flood')) c = '#00cc00';
-      return { color: c, weight: 2, fillColor: c, fillOpacity: 0.2 };
+      return { color: c, weight: 2, fillColor: c, fillOpacity: 0.2 * groupOpacity, opacity: groupOpacity };
     }
     return {
       color: config.color,
       weight: 2,
       fillColor: config.color,
-      fillOpacity: 0.15,
+      fillOpacity: 0.15 * groupOpacity,
+      opacity: groupOpacity,
     };
   };
 
-  return <GeoJSON key={`${config.id}-${revision}`} data={geojson} style={style} />;
+  return <GeoJSON key={`${config.id}-${revision}-${groupOpacity}`} data={geojson} style={style} />;
+}
+
+/** Ensures a custom Leaflet pane exists with the given name and zIndex */
+function usePane(name: string, zIndex: number) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map.getPane(name)) {
+      const pane = map.createPane(name);
+      pane.style.zIndex = String(zIndex);
+    } else {
+      const pane = map.getPane(name);
+      if (pane) pane.style.zIndex = String(zIndex);
+    }
+  }, [map, name, zIndex]);
 }
 
 export function OverlayLayers() {
   const { state } = useApp();
-  const enabled = state.overlays.filter(o => o.enabled);
+
+  // Build a map of category -> zIndex based on layerGroups order
+  // Index 0 = bottom, last = top. Base zIndex 400, step 10.
+  const groupZIndex: Record<string, number> = {};
+  const groupOpacity: Record<string, number> = {};
+  state.layerGroups.forEach((g, i) => {
+    groupZIndex[g.id] = 400 + i * 10;
+    groupOpacity[g.id] = g.opacity;
+  });
 
   return (
     <>
-      {enabled.map(config => (
-        <OverlayLayer key={config.id} config={config} />
-      ))}
+      {state.layerGroups.map((group) => {
+        if (group.id === 'radar') return null; // radar handled separately
+        const paneId = `overlay-${group.id}`;
+        const enabled = state.overlays.filter(o => o.enabled && o.category === group.id);
+        if (enabled.length === 0) return null;
+        return (
+          <OverlayPane
+            key={group.id}
+            paneName={paneId}
+            zIndex={groupZIndex[group.id]}
+            overlays={enabled}
+            groupOpacity={groupOpacity[group.id]}
+          />
+        );
+      })}
     </>
+  );
+}
+
+function OverlayPane({
+  paneName,
+  zIndex,
+  overlays,
+  groupOpacity: opacity,
+}: {
+  paneName: string;
+  zIndex: number;
+  overlays: OverlayConfig[];
+  groupOpacity: number;
+}) {
+  usePane(paneName, zIndex);
+
+  return (
+    <Pane name={paneName} style={{ zIndex }}>
+      {overlays.map(config => (
+        <OverlayLayer key={config.id} config={config} groupOpacity={opacity} />
+      ))}
+    </Pane>
   );
 }

@@ -1,11 +1,12 @@
 import type { NexradSite, RadarState } from '../types/radar';
-import type { OverlayConfig } from '../types/overlays';
+import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 
 export interface AppState {
   radarState: RadarState;
   overlays: OverlayConfig[];
   overlayGeoJSON: Record<string, GeoJSON.FeatureCollection>;
+  layerGroups: LayerGroup[];  // ordered array — position = z-order (last = top)
   sidebarOpen: boolean;
   sidebarLatLon: [number, number] | null;
   iembotMessages: IEMBotMessage[];
@@ -30,7 +31,9 @@ export type AppAction =
   | { type: 'MARK_IEMBOT_READ' }
   | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
   | { type: 'ADD_OVERLAY'; payload: OverlayConfig }
-  | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } };
+  | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } }
+  | { type: 'SET_GROUP_OPACITY'; payload: { id: string; opacity: number } }
+  | { type: 'MOVE_GROUP'; payload: { id: string; direction: 'up' | 'down' } };
 
 export const initialState: AppState = {
   radarState: {
@@ -50,6 +53,13 @@ export const initialState: AppState = {
     { id: 'mcd', name: 'Mesoscale Discussions', url: 'spc-mcd-custom', enabled: false, refreshInterval: 120000, color: '#4444ff', category: 'spc' },
   ],
   overlayGeoJSON: {},
+  // Order = z-order. Last in array renders on top.
+  layerGroups: [
+    { id: 'spc', name: 'SPC', opacity: 1 },
+    { id: 'radar', name: 'Radar', opacity: 0.7 },
+    { id: 'nws', name: 'NWS', opacity: 1 },
+    { id: 'custom', name: 'Custom', opacity: 1 },
+  ],
   sidebarOpen: false,
   sidebarLatLon: null,
   iembotMessages: [],
@@ -83,7 +93,6 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'CLOSE_SIDEBAR':
       return { ...state, sidebarOpen: false, sidebarLatLon: null };
     case 'ADD_IEMBOT_MSG': {
-      // Deduplicate by seqnum
       if (state.iembotMessages.some((m) => m.seqnum === action.payload.seqnum)) {
         return state;
       }
@@ -105,6 +114,17 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, overlays: [...state.overlays, action.payload] };
     case 'SET_OVERLAY_GEOJSON':
       return { ...state, overlayGeoJSON: { ...state.overlayGeoJSON, [action.payload.id]: action.payload.geojson } };
+    case 'SET_GROUP_OPACITY':
+      return { ...state, layerGroups: state.layerGroups.map(g => g.id === action.payload.id ? { ...g, opacity: action.payload.opacity } : g) };
+    case 'MOVE_GROUP': {
+      const groups = [...state.layerGroups];
+      const idx = groups.findIndex(g => g.id === action.payload.id);
+      if (idx < 0) return state;
+      const swapIdx = action.payload.direction === 'up' ? idx + 1 : idx - 1;
+      if (swapIdx < 0 || swapIdx >= groups.length) return state;
+      [groups[idx], groups[swapIdx]] = [groups[swapIdx], groups[idx]];
+      return { ...state, layerGroups: groups };
+    }
     default:
       return state;
   }

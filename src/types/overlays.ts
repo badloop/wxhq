@@ -8,6 +8,12 @@ export interface OverlayConfig {
   category: 'spc' | 'nws' | 'custom';
 }
 
+export interface LayerGroup {
+  id: string;        // 'radar' | 'spc' | 'nws' | 'custom'
+  name: string;
+  opacity: number;    // 0-1
+}
+
 export interface OverlayData {
   config: OverlayConfig;
   geojson: GeoJSON.FeatureCollection | null;
