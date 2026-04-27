@@ -59,22 +59,39 @@ async function fetchMCDPolygon(messageHtml: string): Promise<IEMBotPolygon | nul
   }
 }
 
-// Cache the NWS active alerts response (refreshed at most every 30s)
-let alertsCache: { data: any; fetchedAt: number } | null = null;
-const ALERTS_CACHE_TTL = 30000;
+// Human-readable event names for VTEC phenomena+significance combos
+const vtecEventNames: Record<string, Record<string, string>> = {
+  TO: { W: 'Tornado Warning', A: 'Tornado Watch' },
+  SV: { W: 'Severe Thunderstorm Warning', A: 'Severe Thunderstorm Watch' },
+  FF: { W: 'Flash Flood Warning', A: 'Flash Flood Watch' },
+  FL: { W: 'Flood Warning', A: 'Flood Watch', Y: 'Flood Advisory' },
+  FA: { W: 'Areal Flood Warning', Y: 'Areal Flood Advisory' },
+  MA: { W: 'Special Marine Warning' },
+  SC: { Y: 'Small Craft Advisory' },
+  EW: { W: 'Extreme Wind Warning' },
+  BZ: { W: 'Blizzard Warning', A: 'Blizzard Watch' },
+  WS: { W: 'Winter Storm Warning', A: 'Winter Storm Watch' },
+  IS: { W: 'Ice Storm Warning' },
+  WW: { Y: 'Winter Weather Advisory' },
+  HU: { W: 'Hurricane Warning', A: 'Hurricane Watch' },
+  TR: { W: 'Tropical Storm Warning', A: 'Tropical Storm Watch' },
+  FG: { Y: 'Dense Fog Advisory' },
+  HW: { W: 'High Wind Warning', A: 'High Wind Watch' },
+  WI: { Y: 'Wind Advisory' },
+  HT: { Y: 'Heat Advisory', W: 'Excessive Heat Warning' },
+  EH: { W: 'Excessive Heat Warning', A: 'Excessive Heat Watch' },
+  FW: { W: 'Red Flag Warning', A: 'Fire Weather Watch' },
+  SE: { A: 'Hazardous Seas Watch', W: 'Hazardous Seas Warning' },
+  CF: { W: 'Coastal Flood Warning', A: 'Coastal Flood Watch', Y: 'Coastal Flood Advisory' },
+  SU: { W: 'High Surf Warning', Y: 'High Surf Advisory' },
+  TS: { Y: 'Tsunami Advisory', W: 'Tsunami Warning', A: 'Tsunami Watch' },
+};
 
-async function getActiveAlerts(): Promise<any> {
-  const now = Date.now();
-  if (alertsCache && now - alertsCache.fetchedAt < ALERTS_CACHE_TTL) {
-    return alertsCache.data;
-  }
-  const res = await fetchWithRetry('https://api.weather.gov/alerts/active?status=actual', {}, 1);
-  const data = await res.json();
-  alertsCache = { data, fetchedAt: now };
-  return data;
-}
-
-/** Fetch VTEC warning polygon from NWS API */
+/**
+ * Fetch VTEC polygon from IEM GeoJSON API.
+ * Works for warnings (W) and advisories (Y) — returns county/zone or storm-based polygons.
+ * Watches (A) from SPC typically return 0 features per-WFO (issued nationally, not per-WFO).
+ */
 async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | null> {
   // Extract IEM VTEC URL: /vtec/f/YYYY-O-ACTION-KWFO-PH-SIG-ETN_timestamp
   const vtecMatch = messageHtml.match(
@@ -82,44 +99,51 @@ async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | nu
   );
   if (!vtecMatch) return null;
 
-  const [, , , wfo, phenomena, significance, etn] = vtecMatch;
+  const [, year, , wfo, phenomena, significance, etn] = vtecMatch;
   const id = `vtec-${wfo}-${phenomena}-${significance}-${etn}`;
+  const etnNum = parseInt(etn, 10);
 
-  // Only warnings (significance W) have polygon geometry in NWS API.
-  // Watches (A), advisories (Y), and statements (S) use county/zone areas without polygons.
-  if (significance !== 'W') return null;
+  // Watches (A) are issued by SPC nationally — IEM returns 0 features per-WFO. Skip.
+  if (significance === 'A') return null;
 
-  // Build the IEM VTEC URL for reference
-  const iemUrl = `https://mesonet.agron.iastate.edu/vtec/#${vtecMatch[0].split("'")[0].split('/vtec/f/')[1] || ''}`;
+  const iemUrl = `https://mesonet.agron.iastate.edu/vtec/#${year}-O-NEW-K${wfo}-${phenomena}-${significance}-${etn}`;
 
   try {
-    // Query active alerts (cached) and search by VTEC string
-    const data = await getActiveAlerts();
+    // IEM GeoJSON API: returns county/zone polygons for any VTEC event (even expired)
+    const apiUrl = `https://mesonet.agron.iastate.edu/geojson/vtec_event.py?wfo=${wfo}&year=${year}&phenomena=${phenomena}&significance=${significance}&etn=${etnNum}`;
+    const res = await fetchWithRetry(apiUrl, {}, 1);
+    const data = await res.json();
 
-    // Match by WFO + phenomena + significance + ETN in the VTEC parameter
-    const vtecPattern = `K${wfo}.${phenomena}.${significance}.${etn}`;
-    const feature = data.features?.find((f: any) => {
-      const vtecStrings: string[] = f.properties?.parameters?.VTEC || [];
-      return vtecStrings.some((v: string) => v.includes(vtecPattern));
-    });
-
-    if (!feature?.geometry?.coordinates) {
-      console.warn(`[wxhq] No NWS geometry found for VTEC ${id} (pattern: ${vtecPattern})`);
+    if (!data.features?.length) {
+      console.warn(`[wxhq] IEM returned 0 features for VTEC ${id}`);
       return null;
     }
 
-    const coords = feature.geometry.coordinates[0] as [number, number][];
-    // NWS API returns [lon, lat], convert to [lat, lon] for Leaflet
-    const leafletCoords: [number, number][] = coords.map(([lon, lat]) => [lat, lon]);
+    // Convert each feature's outer ring to Leaflet [lat, lon] format
+    const rings: [number, number][][] = [];
+    for (const feature of data.features) {
+      const geom = feature.geometry;
+      if (!geom?.coordinates) continue;
+      for (const polygon of geom.coordinates) {
+        const outerRing = polygon[0] as [number, number][];
+        const leafletRing = closeRing(
+          outerRing.map(([lon, lat]: [number, number]) => [lat, lon] as [number, number])
+        );
+        rings.push(leafletRing);
+      }
+    }
 
-    const props = feature.properties;
-    const label = `${wfo} ${props?.event || phenomena}`;
+    if (rings.length === 0) return null;
+
+    const eventName = vtecEventNames[phenomena]?.[significance] || `${phenomena}.${significance}`;
+    const label = `${wfo} ${eventName}`;
 
     return {
       id,
-      coordinates: leafletCoords,
+      // Single ring: flatten for backward compat; multi-ring: keep as array of rings
+      coordinates: rings.length === 1 ? rings[0] : rings,
       label,
-      concerning: props?.headline || props?.event || '',
+      concerning: data.features[0]?.properties?.headline || eventName,
       url: iemUrl,
       timestamp: Date.now(),
     };

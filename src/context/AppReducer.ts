@@ -6,7 +6,7 @@ import type { MapPoint } from '../types/mapPoints';
 
 export interface IEMBotPolygon {
   id: string;           // e.g. "mcd-0570" or "vtec-PAH-SV-W-0213"
-  coordinates: [number, number][]; // [lat, lng] pairs for Leaflet
+  coordinates: [number, number][] | [number, number][][]; // single ring or array of rings
   label: string;        // e.g. "MCD #570" or "PAH Severe Tstm"
   concerning: string;   // brief description
   url: string;          // source page URL
