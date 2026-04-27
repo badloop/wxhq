@@ -108,6 +108,9 @@ export const defaultLayerGroups: LayerGroup[] = [
   { id: 'mcd', name: 'Mesoscale Disc.', opacity: 1 },
   { id: 'radar', name: 'Radar', opacity: 0.7 },
   { id: 'nws', name: 'NWS', opacity: 1 },
+  { id: 'iembot', name: 'IEMBot', opacity: 1 },
+  { id: 'reference', name: 'Reference', opacity: 1 },
+  { id: 'points', name: 'Points', opacity: 1 },
   { id: 'custom', name: 'Custom', opacity: 1 },
 ];
 
@@ -241,7 +244,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       let newState = { ...state };
 
       if (cfg.layerGroups) {
-        newState.layerGroups = cfg.layerGroups;
+        // Merge: keep saved order/opacity, but add any new default groups that are missing
+        const saved = cfg.layerGroups;
+        const missing = defaultLayerGroups.filter(dg => !saved.some(sg => sg.id === dg.id));
+        newState.layerGroups = [...saved, ...missing];
       }
       if (cfg.iembotRooms) {
         newState.iembotConfig = { ...newState.iembotConfig, rooms: cfg.iembotRooms };

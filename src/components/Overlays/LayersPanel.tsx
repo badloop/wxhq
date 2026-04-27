@@ -98,25 +98,13 @@ const REF_LAYER_DEFS = [
   { key: 'stateLines', label: 'State Lines' },
   { key: 'countyLines', label: 'County Lines' },
   { key: 'radarSites', label: 'Radar Sites' },
-  { key: 'iembot', label: 'IEMBot' },
 ] as const;
 
-function RefLayerSection() {
+function RefLayerContent() {
   const { state, dispatch } = useApp();
-  const [collapsed, setCollapsed] = useState(true);
-
   return (
-    <div style={{ padding: '6px 12px', borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', marginBottom: collapsed ? 0 : 6 }}
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        <span style={{ color: '#00f0ff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', flex: 1 }}>
-          Reference
-        </span>
-        <span style={{ color: '#606070', fontSize: 9 }}>{collapsed ? '▶' : '▼'}</span>
-      </div>
-      {!collapsed && REF_LAYER_DEFS.map(ref => {
+    <>
+      {REF_LAYER_DEFS.map(ref => {
         const cfg = state.refLayers[ref.key];
         if (!cfg) return null;
         return (
@@ -161,31 +149,69 @@ function RefLayerSection() {
           </div>
         );
       })}
+    </>
+  );
+}
+
+function IEMBotContent() {
+  const { state, dispatch } = useApp();
+  const cfg = state.refLayers.iembot;
+  if (!cfg) return null;
+
+  return (
+    <div style={{ paddingLeft: 20 }}>
+      <label style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        color: '#e0e0e0', fontSize: 12, cursor: 'pointer', marginBottom: 3,
+      }}>
+        <input
+          type="checkbox" checked={cfg.enabled}
+          onChange={() => dispatch({ type: 'TOGGLE_REF_LAYER', payload: 'iembot' })}
+          style={{ accentColor: cfg.color }}
+        />
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: cfg.color, display: 'inline-block', flexShrink: 0 }} />
+        MCD Polygons
+      </label>
+      {cfg.enabled && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingLeft: 20, marginTop: 2 }}>
+          <input
+            type="color" value={cfg.color}
+            onChange={e => dispatch({ type: 'SET_REF_LAYER_STYLE', payload: { id: 'iembot', key: 'color', value: e.target.value } })}
+            title="Polygon color"
+            style={{ width: 20, height: 16, padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#808090', fontSize: 10 }}>
+            W
+            <input type="range" min={0.5} max={5} step={0.5} value={cfg.weight}
+              onChange={e => dispatch({ type: 'SET_REF_LAYER_STYLE', payload: { id: 'iembot', key: 'weight', value: parseFloat(e.target.value) } })}
+              style={{ width: 50, height: 3, accentColor: '#00f0ff' }}
+            />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#808090', fontSize: 10 }}>
+            Op
+            <input type="range" min={0} max={100}
+              value={Math.round(cfg.opacity * 100)}
+              onChange={e => dispatch({ type: 'SET_REF_LAYER_STYLE', payload: { id: 'iembot', key: 'opacity', value: parseInt(e.target.value) / 100 } })}
+              style={{ width: 50, height: 3, accentColor: '#00f0ff' }}
+            />
+          </label>
+        </div>
+      )}
+      {state.mcdPolygons.length > 0 && (
+        <div style={{ color: '#808090', fontSize: 10, paddingLeft: 20, marginTop: 4 }}>
+          {state.mcdPolygons.length} active polygon{state.mcdPolygons.length !== 1 ? 's' : ''}
+        </div>
+      )}
     </div>
   );
 }
 
-function PointsSection() {
-  const [collapsed, setCollapsed] = useState(true);
-
+function PointsContent() {
   return (
-    <div style={{ borderTop: '1px solid rgba(0, 240, 255, 0.15)' }}>
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px' }}
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        <span style={{ color: '#00f0ff', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px', flex: 1 }}>
-          Points
-        </span>
-        <span style={{ color: '#606070', fontSize: 9 }}>{collapsed ? '▶' : '▼'}</span>
-      </div>
-      {!collapsed && (
-        <>
-          <MapPointList />
-          <MapPointInput />
-        </>
-      )}
-    </div>
+    <>
+      <MapPointList />
+      <MapPointInput />
+    </>
   );
 }
 
@@ -206,6 +232,30 @@ export function LayersPanel() {
               <div style={{ color: '#a0a0b0', fontSize: 11, paddingLeft: 20 }}>
                 Mosaic / Site radar
               </div>
+            </LayerGroupRow>
+          );
+        }
+
+        if (group.id === 'reference') {
+          return (
+            <LayerGroupRow key={group.id} group={group} isFirst={isFirst} isLast={isLast}>
+              <RefLayerContent />
+            </LayerGroupRow>
+          );
+        }
+
+        if (group.id === 'iembot') {
+          return (
+            <LayerGroupRow key={group.id} group={group} isFirst={isFirst} isLast={isLast}>
+              <IEMBotContent />
+            </LayerGroupRow>
+          );
+        }
+
+        if (group.id === 'points') {
+          return (
+            <LayerGroupRow key={group.id} group={group} isFirst={isFirst} isLast={isLast}>
+              <PointsContent />
             </LayerGroupRow>
           );
         }
@@ -255,9 +305,6 @@ export function LayersPanel() {
           </LayerGroupRow>
         );
       })}
-
-      <RefLayerSection />
-      <PointsSection />
     </div>
   );
 }
