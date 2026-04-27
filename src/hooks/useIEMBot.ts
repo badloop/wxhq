@@ -45,7 +45,7 @@ async function sendTelegramNotification(messages: Array<{ room: string; text: st
     await fetch('http://localhost:5010/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: body }),
+      body: JSON.stringify({ text: body }),
     });
   } catch {
     // Telegram bot may not be running — silent fail
