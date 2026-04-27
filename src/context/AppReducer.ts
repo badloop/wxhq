@@ -14,6 +14,8 @@ export interface AppState {
   iembotConfig: IEMBotConfig;
   iembotPanelOpen: boolean;
   iembotUnread: number;
+  iembotLastSeqnums: Record<string, number>;
+  iembotDismissed: number[];
   mapPoints: MapPoint[];
 }
 
@@ -36,6 +38,7 @@ export type AppAction =
   | { type: 'MARK_IEMBOT_READ' }
   | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
   | { type: 'SET_IEMBOT_TELEGRAM'; payload: boolean }
+  | { type: 'SET_IEMBOT_SEQNUMS'; payload: Record<string, number> }
   | { type: 'ADD_OVERLAY'; payload: OverlayConfig }
   | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } }
   | { type: 'SET_GROUP_OPACITY'; payload: { id: string; opacity: number } }
@@ -51,6 +54,8 @@ export interface PersistableConfig {
   layerGroups: LayerGroup[];
   iembotRooms: string[];
   iembotTelegramNotify: boolean;
+  iembotLastSeqnums: Record<string, number>;
+  iembotDismissed: number[];
   animationSpeed: number;
   frameCount: number;
   radarProduct: RadarProductId;
@@ -98,6 +103,8 @@ export const initialState: AppState = {
   },
   iembotPanelOpen: false,
   iembotUnread: 0,
+  iembotLastSeqnums: {},
+  iembotDismissed: [],
   mapPoints: [],
 };
 
@@ -129,6 +136,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (state.iembotMessages.some((m) => m.seqnum === action.payload.seqnum)) {
         return state;
       }
+      // Skip dismissed messages
+      if (state.iembotDismissed.includes(action.payload.seqnum)) {
+        return state;
+      }
       return {
         ...state,
         iembotMessages: [action.payload, ...state.iembotMessages].slice(0, 500),
@@ -136,9 +147,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       };
     }
     case 'CLEAR_IEMBOT':
-      return { ...state, iembotMessages: [], iembotUnread: 0 };
+      return { ...state, iembotMessages: [], iembotUnread: 0, iembotDismissed: [] };
     case 'DISMISS_IEMBOT_MSG':
-      return { ...state, iembotMessages: state.iembotMessages.filter(m => m.seqnum !== action.payload) };
+      return {
+        ...state,
+        iembotMessages: state.iembotMessages.filter(m => m.seqnum !== action.payload),
+        iembotDismissed: [...state.iembotDismissed, action.payload].slice(-500),
+      };
     case 'TOGGLE_IEMBOT_PANEL':
       return { ...state, iembotPanelOpen: !state.iembotPanelOpen, iembotUnread: state.iembotPanelOpen ? state.iembotUnread : 0 };
     case 'MARK_IEMBOT_READ':
@@ -147,6 +162,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, iembotConfig: { ...state.iembotConfig, rooms: action.payload } };
     case 'SET_IEMBOT_TELEGRAM':
       return { ...state, iembotConfig: { ...state.iembotConfig, telegramNotify: action.payload } };
+    case 'SET_IEMBOT_SEQNUMS':
+      return { ...state, iembotLastSeqnums: { ...state.iembotLastSeqnums, ...action.payload } };
     case 'ADD_OVERLAY':
       return { ...state, overlays: [...state.overlays, action.payload] };
     case 'SET_OVERLAY_GEOJSON':
@@ -174,6 +191,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.iembotTelegramNotify !== undefined) {
         newState.iembotConfig = { ...newState.iembotConfig, telegramNotify: cfg.iembotTelegramNotify };
+      }
+      if (cfg.iembotLastSeqnums) {
+        newState.iembotLastSeqnums = cfg.iembotLastSeqnums;
+      }
+      if (cfg.iembotDismissed) {
+        newState.iembotDismissed = cfg.iembotDismissed;
       }
       if (cfg.animationSpeed !== undefined) {
         newState.radarState = { ...newState.radarState, animationSpeed: cfg.animationSpeed };

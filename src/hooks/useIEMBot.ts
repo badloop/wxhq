@@ -20,7 +20,6 @@ function playNotificationSound() {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
 
-    // Clean up
     osc.onended = () => ctx.close();
   } catch {
     // Audio not available — silent fallback
@@ -52,13 +51,24 @@ async function sendTelegramNotification(messages: Array<{ room: string; text: st
   }
 }
 
+/**
+ * Boot timestamp — set once when the module first loads.
+ * Survives HMR since module-level state persists across hot reloads.
+ * Only messages with timestamps AFTER this will trigger notifications.
+ */
+const BOOT_TIME = new Date();
+
+/** Parse IEMBot UTC timestamp to Date */
+function parseIEMTimestamp(ts: string): Date {
+  return new Date(ts.replace(' ', 'T') + 'Z');
+}
+
 export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const { state, dispatch } = useApp();
   const seqnumRef = useRef<Record<string, number>>({});
   const [isConnected, setIsConnected] = useState(false);
-  const initialLoadRef = useRef(true);
+  const seededRef = useRef(false);
   const audioEnabledRef = useRef(true);
-  // Snapshot telegramNotify into a ref so the poll callback doesn't go stale
   const telegramEnabledRef = useRef(state.iembotConfig.telegramNotify);
   telegramEnabledRef.current = state.iembotConfig.telegramNotify;
 
@@ -95,8 +105,10 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
               },
             });
             newMessageCount++;
-            // Queue for telegram (only non-initial messages)
-            if (!initialLoadRef.current) {
+
+            // Only queue for notifications if message arrived AFTER boot
+            const msgTime = parseIEMTimestamp(msg.ts);
+            if (msgTime > BOOT_TIME) {
               telegramQueue.push({
                 room,
                 text: stripHtml(cleanedHtml),
@@ -105,6 +117,8 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
             }
           }
           seqnumRef.current[room] = maxSeq;
+          // Persist seqnums so next refresh starts from here
+          dispatch({ type: 'SET_IEMBOT_SEQNUMS', payload: { [room]: maxSeq } });
         }
       } catch (err) {
         console.error(`[IEMBot] Error polling ${room}:`, err);
@@ -113,24 +127,29 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
 
     setIsConnected(anySuccess);
 
-    // Play sound for new messages, but not on initial history load
-    if (newMessageCount > 0 && !initialLoadRef.current && audioEnabledRef.current) {
+    // Audio: only for messages after boot
+    if (telegramQueue.length > 0 && audioEnabledRef.current) {
       playNotificationSound();
     }
 
-    // Send Telegram notification for new messages (not initial load)
+    // Telegram: only for messages after boot
     if (telegramQueue.length > 0 && telegramEnabledRef.current) {
       sendTelegramNotification(telegramQueue);
     }
-
-    initialLoadRef.current = false;
   }, [rooms, dispatch]);
 
   useEffect(() => {
     if (rooms.length === 0) return;
 
-    seqnumRef.current = {};
-    initialLoadRef.current = true;
+    // Seed seqnums from persisted state (only once)
+    if (!seededRef.current) {
+      const saved = state.iembotLastSeqnums;
+      if (saved && Object.keys(saved).length > 0) {
+        seqnumRef.current = { ...saved };
+      }
+      seededRef.current = true;
+    }
+
     poll();
     const id = setInterval(poll, pollInterval);
     return () => clearInterval(id);

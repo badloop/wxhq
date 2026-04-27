@@ -14,6 +14,8 @@ export function extractConfig(state: AppState): PersistableConfig {
     layerGroups: state.layerGroups,
     iembotRooms: state.iembotConfig.rooms,
     iembotTelegramNotify: state.iembotConfig.telegramNotify,
+    iembotLastSeqnums: state.iembotLastSeqnums,
+    iembotDismissed: state.iembotDismissed,
     animationSpeed: state.radarState.animationSpeed,
     frameCount: state.radarState.frameCount,
     radarProduct: state.radarState.radarProduct,
