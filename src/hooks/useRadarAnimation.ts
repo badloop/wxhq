@@ -1,30 +1,34 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import type { RadarFrame } from '../types/radar';
+import { useEffect, useRef } from 'react';
 
-export function useRadarAnimation(frames: RadarFrame[], speed: number) {
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+/**
+ * Drives a frame-based animation loop by dispatching frame index updates.
+ * When `active` is true and `frameCount` > 0, runs a setInterval that
+ * calls `onFrame` with the next frame index each tick.
+ */
+export function useRadarAnimation(
+  active: boolean,
+  frameCount: number,
+  speed: number,
+  currentFrame: number,
+  onFrame: (frame: number) => void,
+) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const stop = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = null;
-  }, []);
+  const currentRef = useRef(currentFrame);
+  currentRef.current = currentFrame;
 
   useEffect(() => {
-    if (!isPlaying || frames.length === 0) { stop(); return; }
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
+
+    if (!active || frameCount === 0) return;
+
     intervalRef.current = setInterval(() => {
-      setCurrentFrame(f => (f + 1) % frames.length);
+      const next = (currentRef.current + 1) % frameCount;
+      onFrame(next);
     }, speed);
-    return stop;
-  }, [isPlaying, frames.length, speed, stop]);
 
-  useEffect(() => { setCurrentFrame(0); setIsPlaying(false); }, [frames]);
-
-  const play = useCallback(() => setIsPlaying(true), []);
-  const pause = useCallback(() => setIsPlaying(false), []);
-  const stepForward = useCallback(() => setCurrentFrame(f => (f + 1) % Math.max(frames.length, 1)), [frames.length]);
-  const stepBack = useCallback(() => setCurrentFrame(f => (f - 1 + frames.length) % Math.max(frames.length, 1)), [frames.length]);
-
-  return { currentFrame, isPlaying, play, pause, stepForward, stepBack, setCurrentFrame };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [active, frameCount, speed, onFrame]);
 }

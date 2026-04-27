@@ -1,8 +1,8 @@
 import { TileLayer } from 'react-leaflet';
+import { useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { getMosaicTileUrl, MOSAIC_MINUTES_AGO } from '../../services/radarApi';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
-import { useEffect } from 'react';
 import type { RadarFrame } from '../../types/radar';
 
 /** Synthetic frames for mosaic animation (55 min ago → current, 5-min steps) */
@@ -14,19 +14,20 @@ const MOSAIC_FRAMES: RadarFrame[] = MOSAIC_MINUTES_AGO.map(m => ({
 
 export function NexradMosaic() {
   const { state, dispatch } = useApp();
-  const { selectedSite, isAnimating } = state.radarState;
+  const { selectedSite, isAnimating, animationSpeed, currentFrame } = state.radarState;
 
-  const { currentFrame } = useRadarAnimation(
-    !selectedSite && isAnimating ? MOSAIC_FRAMES : [],
-    state.radarState.animationSpeed,
+  const onFrame = useCallback(
+    (f: number) => dispatch({ type: 'SET_CURRENT_FRAME', payload: f }),
+    [dispatch],
   );
 
-  // Sync current frame back to global state for UI display
-  useEffect(() => {
-    if (!selectedSite && isAnimating) {
-      dispatch({ type: 'SET_CURRENT_FRAME', payload: currentFrame });
-    }
-  }, [currentFrame, selectedSite, isAnimating, dispatch]);
+  useRadarAnimation(
+    !selectedSite && isAnimating,
+    MOSAIC_FRAMES.length,
+    animationSpeed,
+    currentFrame,
+    onFrame,
+  );
 
   // When a site is selected, don't show mosaic
   if (selectedSite) return null;

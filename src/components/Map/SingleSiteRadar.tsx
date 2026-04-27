@@ -1,24 +1,25 @@
 import { TileLayer } from 'react-leaflet';
+import { useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
-import { useEffect } from 'react';
 
 export function SingleSiteRadar() {
   const { state, dispatch } = useApp();
   const site = state.radarState.selectedSite;
-  const { frames, animationSpeed, isAnimating } = state.radarState;
+  const { frames, animationSpeed, isAnimating, currentFrame } = state.radarState;
 
-  const { currentFrame } = useRadarAnimation(
-    site && isAnimating ? frames : [],
-    animationSpeed,
+  const onFrame = useCallback(
+    (f: number) => dispatch({ type: 'SET_CURRENT_FRAME', payload: f }),
+    [dispatch],
   );
 
-  // Sync animation frame to global state so AnimationControls can display it
-  useEffect(() => {
-    if (site && isAnimating) {
-      dispatch({ type: 'SET_CURRENT_FRAME', payload: currentFrame });
-    }
-  }, [currentFrame, site, isAnimating, dispatch]);
+  useRadarAnimation(
+    !!site && isAnimating,
+    frames.length,
+    animationSpeed,
+    currentFrame,
+    onFrame,
+  );
 
   if (!site) return null;
 
