@@ -1,36 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
-import { GeoJSON, WMSTileLayer, useMap, Pane } from 'react-leaflet';
+import { GeoJSON, useMap, Pane } from 'react-leaflet';
 import type { PathOptions } from 'leaflet';
 import type { OverlayConfig } from '../../types/overlays';
 import { useApp } from '../../context/AppContext';
 import { fetchWithRetry } from '../../services/fetchClient';
 import { fetchActiveMCDs } from '../../services/mcdApi';
-
-/** WMS overlay — renders as a tile layer with auto-refresh */
-function WMSOverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOpacity: number }) {
-  const [revision, setRevision] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    // Force re-render on refresh interval to bust WMS cache
-    intervalRef.current = setInterval(() => setRevision(r => r + 1), config.refreshInterval);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [config.refreshInterval]);
-
-  return (
-    <WMSTileLayer
-      key={`${config.id}-wms-${revision}`}
-      url={config.url}
-      params={{
-        layers: config.wmsLayers || '',
-        format: 'image/png',
-        transparent: true,
-        version: '1.1.1',
-      } as any}
-      opacity={groupOpacity}
-    />
-  );
-}
+import { fetchActiveWatches } from '../../services/watchApi';
 
 function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOpacity: number }) {
   const { dispatch } = useApp();
@@ -46,6 +21,8 @@ function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOp
         let data: GeoJSON.FeatureCollection;
         if (config.id === 'mcd') {
           data = await fetchActiveMCDs();
+        } else if (config.id === 'watches') {
+          data = await fetchActiveWatches();
         } else {
           const res = await fetchWithRetry(config.url);
           const raw = await res.json();
@@ -173,13 +150,9 @@ function OverlayPane({
 
   return (
     <Pane name={paneName} style={{ zIndex }}>
-      {overlays.map(config =>
-        config.type === 'wms' ? (
-          <WMSOverlayLayer key={config.id} config={config} groupOpacity={opacity} />
-        ) : (
-          <OverlayLayer key={config.id} config={config} groupOpacity={opacity} />
-        )
-      )}
+      {overlays.map(config => (
+        <OverlayLayer key={config.id} config={config} groupOpacity={opacity} />
+      ))}
     </Pane>
   );
 }

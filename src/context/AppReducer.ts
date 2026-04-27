@@ -98,8 +98,8 @@ export const defaultOverlays: OverlayConfig[] = [
   { id: 'day1', name: 'SPC Day 1 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day1otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc', fillMode: 'fill' },
   { id: 'day2', name: 'SPC Day 2 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day2otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc', fillMode: 'fill' },
   { id: 'day3', name: 'SPC Day 3 Outlook', url: 'https://www.spc.noaa.gov/products/outlook/day3otlk_cat.lyr.geojson', enabled: false, refreshInterval: 300000, color: '#39ff14', category: 'spc', fillMode: 'fill' },
-  { id: 'warnings', name: 'NWS Warnings', url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/us/wwa.cgi', enabled: false, refreshInterval: 30000, color: '#ff0000', category: 'nws', fillMode: 'fill', type: 'wms', wmsLayers: 'warnings_p' },
-  { id: 'watches', name: 'NWS County Warnings', url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/us/wwa.cgi', enabled: false, refreshInterval: 60000, color: '#ffff00', category: 'nws', fillMode: 'fill', type: 'wms', wmsLayers: 'warnings_c' },
+  { id: 'warnings', name: 'NWS Warnings', url: 'https://api.weather.gov/alerts/active?status=actual&message_type=alert', enabled: false, refreshInterval: 30000, color: '#ff0000', category: 'nws', fillMode: 'fill' },
+  { id: 'watches', name: 'NWS Watches', url: 'nws-watches-custom', enabled: false, refreshInterval: 60000, color: '#ffff00', category: 'nws', fillMode: 'fill' },
   { id: 'mcd', name: 'Mesoscale Discussions', url: 'spc-mcd-custom', enabled: false, refreshInterval: 120000, color: '#4444ff', category: 'mcd', fillMode: 'fill' },
 ];
 
