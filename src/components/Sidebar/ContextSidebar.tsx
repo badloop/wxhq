@@ -207,7 +207,6 @@ export function ContextSidebar() {
   const { state, dispatch } = useApp();
   const { sidebarOpen, sidebarLatLon } = state;
   const mobile = useIsMobile();
-  const width = mobile ? '100vw' : SIDEBAR_WIDTH;
   const barHeight = mobile ? 72 : 56;
 
   return (
@@ -250,21 +249,6 @@ export function ContextSidebar() {
             >✕ Close</button>
           </div>
         )}
-        <div style={scrollArea}>
-          <LayersPanel />
-          {sidebarLatLon && (
-            <LocationContext lat={sidebarLatLon[0]} lon={sidebarLatLon[1]} />
-          )}
-        </div>
-      </div>
-
-      {/* Sidebar panel */}
-      <div style={{
-        ...panelBase,
-        width,
-        bottom: barHeight,
-        transform: sidebarOpen ? 'translateX(0)' : `translateX(${mobile ? '100vw' : `${SIDEBAR_WIDTH}px`})`,
-      }}>
         <div style={scrollArea}>
           <LayersPanel />
           {sidebarLatLon && (
