@@ -1,6 +1,6 @@
 import type { NexradSite, RadarState } from '../types/radar';
 import type { OverlayConfig } from '../types/overlays';
-import type { IEMBotMessage } from '../types/iembot';
+import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 
 export interface AppState {
   radarState: RadarState;
@@ -8,6 +8,9 @@ export interface AppState {
   sidebarOpen: boolean;
   sidebarLatLon: [number, number] | null;
   iembotMessages: IEMBotMessage[];
+  iembotConfig: IEMBotConfig;
+  iembotPanelOpen: boolean;
+  iembotUnread: number;
 }
 
 export type AppAction =
@@ -21,7 +24,11 @@ export type AppAction =
   | { type: 'OPEN_SIDEBAR'; payload: [number, number] }
   | { type: 'CLOSE_SIDEBAR' }
   | { type: 'ADD_IEMBOT_MSG'; payload: IEMBotMessage }
-  | { type: 'CLEAR_IEMBOT' };
+  | { type: 'CLEAR_IEMBOT' }
+  | { type: 'TOGGLE_IEMBOT_PANEL' }
+  | { type: 'MARK_IEMBOT_READ' }
+  | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
+  | { type: 'ADD_OVERLAY'; payload: OverlayConfig };
 
 export const initialState: AppState = {
   radarState: {
@@ -43,6 +50,13 @@ export const initialState: AppState = {
   sidebarOpen: false,
   sidebarLatLon: null,
   iembotMessages: [],
+  iembotConfig: {
+    rooms: ['botstalk'],
+    pollInterval: 10000,
+    enabled: true,
+  },
+  iembotPanelOpen: false,
+  iembotUnread: 0,
 };
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -65,10 +79,21 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, sidebarOpen: true, sidebarLatLon: action.payload };
     case 'CLOSE_SIDEBAR':
       return { ...state, sidebarOpen: false, sidebarLatLon: null };
-    case 'ADD_IEMBOT_MSG':
-      return { ...state, iembotMessages: [action.payload, ...state.iembotMessages].slice(0, 100) };
+    case 'ADD_IEMBOT_MSG': {
+      // Deduplicate by seqnum
+      if (state.iembotMessages.some((m) => m.seqnum === action.payload.seqnum)) {
+        return state;
+      }
+      return {
+        ...state,
+        iembotMessages: [action.payload, ...state.iembotMessages].slice(0, 500),
+        iembotUnread: state.iembotPanelOpen ? state.iembotUnread : state.iembotUnread + 1,
+      };
+    }
     case 'CLEAR_IEMBOT':
       return { ...state, iembotMessages: [] };
+    case 'ADD_OVERLAY':
+      return { ...state, overlays: [...state.overlays, action.payload] };
     default:
       return state;
   }

@@ -2,6 +2,7 @@ import { AppProvider } from './context/AppContext';
 import { RadarMap } from './components/Map/RadarMap';
 import { AnimationControls } from './components/Map/AnimationControls';
 import { OverlayManager } from './components/Overlays/OverlayManager';
+import { ContextSidebar } from './components/Sidebar/ContextSidebar';
 
 export default function App() {
   return (
@@ -10,6 +11,7 @@ export default function App() {
         <RadarMap />
         <OverlayManager />
         <AnimationControls />
+        <ContextSidebar />
       </div>
     </AppProvider>
   );

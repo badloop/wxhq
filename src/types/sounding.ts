@@ -30,3 +30,26 @@ export interface HodographPoint {
   height: number;
   pressure: number;
 }
+
+export interface RAOBStation {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  state: string;
+}
+
+export interface SoundingProfile {
+  station: string;
+  valid: string;
+  levels: SoundingProfileLevel[];
+}
+
+export interface SoundingProfileLevel {
+  pres: number;
+  hght: number;
+  tmpc: number | null;
+  dwpc: number | null;
+  drct: number | null;
+  sknt: number | null;
+}

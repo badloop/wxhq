@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useApp } from '../../context/AppContext';
+import { CustomOverlayInput } from './CustomOverlayInput';
 
 const panel: CSSProperties = {
   position: 'fixed',
@@ -68,6 +69,7 @@ export function OverlayManager() {
               ))}
             </div>
           ))}
+          <CustomOverlayInput />
         </div>
       )}
     </div>

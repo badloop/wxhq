@@ -1,18 +1,23 @@
 export interface IEMBotMessage {
-  id: string;
-  channel: string;
-  source: string;
-  text: string;
-  timestamp: Date;
-  product?: string;
-  wfo?: string;
-  phenomena?: string;
-  significance?: string;
-  eventId?: string;
+  seqnum: number;
+  timestamp: string; // "2026-04-27 14:26:44" (UTC)
+  author: string;
+  productId: string;
+  message: string; // HTML content
+  room: string;
+  read: boolean;
 }
 
-export interface IEMBotChannel {
-  id: string;
-  name: string;
-  description: string;
+export interface IEMBotRawMessage {
+  seqnum: number;
+  ts: string;
+  author: string;
+  product_id: string;
+  message: string;
+}
+
+export interface IEMBotConfig {
+  rooms: string[];
+  pollInterval: number; // ms (default 10000)
+  enabled: boolean;
 }
