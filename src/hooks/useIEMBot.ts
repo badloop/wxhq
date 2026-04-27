@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchIEMBotMessages, cleanMessageHtml } from '../services/iembotApi';
+import { fetchMCDFromMessage } from '../services/mcdPolygonService';
 
 /** Synthesize a short notification beep via Web Audio API */
 function playNotificationSound() {
@@ -68,6 +69,7 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const seqnumRef = useRef<Record<string, number>>({});
   const [isConnected, setIsConnected] = useState(false);
   const seededRef = useRef(false);
+  const mcdScannedRef = useRef(false);
   const audioEnabledRef = useRef(true);
   const telegramEnabledRef = useRef(state.iembotConfig.telegramNotify);
   telegramEnabledRef.current = state.iembotConfig.telegramNotify;
@@ -105,6 +107,13 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
               },
             });
             newMessageCount++;
+
+            // If this is an MCD message, fetch the polygon in the background
+            if ((msg.product_id ?? '').includes('SWOMCD')) {
+              fetchMCDFromMessage(cleanedHtml).then(poly => {
+                if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
+              });
+            }
 
             // Only queue for notifications if message arrived AFTER boot
             const msgTime = parseIEMTimestamp(msg.ts);
@@ -152,6 +161,19 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
 
     poll();
     const id = setInterval(poll, pollInterval);
+
+    // One-time: scan existing messages for MCD polygons
+    if (!mcdScannedRef.current) {
+      mcdScannedRef.current = true;
+      for (const msg of state.iembotMessages) {
+        if (msg.productId.includes('SWOMCD')) {
+          fetchMCDFromMessage(msg.message).then(poly => {
+            if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
+          });
+        }
+      }
+    }
+
     return () => clearInterval(id);
   }, [rooms.join(','), pollInterval, poll]);
 

@@ -78,7 +78,7 @@ export async function fetchActiveMCDs(): Promise<FeatureCollection> {
  * Format: "LAT...LON  38119068 38389265 ..." where each 8-digit group
  * is 4-digit lat (hundredths) + 4-digit lon (hundredths, west negative).
  */
-function parseMCDPolygon(html: string): [number, number][] | null {
+export function parseMCDPolygon(html: string): [number, number][] | null {
   const lines = html.split('\n');
   let capture = false;
   const coordParts: string[] = [];

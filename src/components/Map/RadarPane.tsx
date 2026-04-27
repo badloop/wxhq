@@ -6,6 +6,7 @@ import { SingleSiteRadar } from './SingleSiteRadar';
 import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
+import { MCDPolygons } from './MCDPolygons';
 import { MapClickHandler } from '../../hooks/useMapClick';
 import { useMapSync } from './MapSyncContext';
 import { useApp } from '../../context/AppContext';
@@ -86,6 +87,7 @@ export function RadarPane({ paneIndex, radarProduct, onProductChange, showContro
         <SingleSiteRadar productOverride={radarProduct} paneIndex={paneIndex} />
         <ReferenceLayers />
         <OverlayLayers />
+        <MCDPolygons />
         <MapPoints />
         <NexradMarkers />
         <MapClickHandler />

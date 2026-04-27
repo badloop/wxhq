@@ -4,6 +4,15 @@ import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 import type { MapPoint } from '../types/mapPoints';
 
+export interface MCDPolygon {
+  id: string;           // e.g. "MD0570"
+  coordinates: [number, number][]; // [lat, lng] pairs for Leaflet
+  label: string;        // e.g. "MCD #570"
+  concerning: string;   // brief description
+  url: string;          // SPC page URL
+  timestamp: number;    // when added (for expiry)
+}
+
 export interface RefLayerConfig {
   enabled: boolean;
   color: string;
@@ -26,6 +35,7 @@ export interface AppState {
   iembotDismissed: number[];
   mapPoints: MapPoint[];
   refLayers: Record<string, RefLayerConfig>;
+  mcdPolygons: MCDPolygon[];
   layout: 1 | 2 | 4;
   paneProducts: RadarProductId[];
 }
@@ -62,7 +72,9 @@ export type AppAction =
   | { type: 'TOGGLE_REF_LAYER'; payload: string }
   | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } }
   | { type: 'SET_LAYOUT'; payload: 1 | 2 | 4 }
-  | { type: 'SET_PANE_PRODUCT'; payload: { pane: number; product: RadarProductId } };
+  | { type: 'SET_PANE_PRODUCT'; payload: { pane: number; product: RadarProductId } }
+  | { type: 'ADD_MCD_POLYGON'; payload: MCDPolygon }
+  | { type: 'REMOVE_MCD_POLYGON'; payload: string };
 
 /** The subset of state that gets persisted to YAML */
 export interface PersistableConfig {
@@ -131,6 +143,7 @@ export const initialState: AppState = {
     countyLines: { enabled: false, color: '#555555', weight: 0.5, opacity: 0.4 },
     radarSites: { enabled: true, color: '#00f0ff', weight: 1, opacity: 1 },
   },
+  mcdPolygons: [],
   layout: 1,
   paneProducts: ['N0B'],
 };
@@ -305,6 +318,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       paneProducts[pane] = product;
       return { ...state, paneProducts };
     }
+    case 'ADD_MCD_POLYGON': {
+      // Deduplicate by id
+      if (state.mcdPolygons.some(p => p.id === action.payload.id)) return state;
+      return { ...state, mcdPolygons: [...state.mcdPolygons, action.payload] };
+    }
+    case 'REMOVE_MCD_POLYGON':
+      return { ...state, mcdPolygons: state.mcdPolygons.filter(p => p.id !== action.payload) };
     default:
       return state;
   }
