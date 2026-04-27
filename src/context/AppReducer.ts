@@ -35,6 +35,7 @@ export type AppAction =
   | { type: 'TOGGLE_IEMBOT_PANEL' }
   | { type: 'MARK_IEMBOT_READ' }
   | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
+  | { type: 'SET_IEMBOT_TELEGRAM'; payload: boolean }
   | { type: 'ADD_OVERLAY'; payload: OverlayConfig }
   | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } }
   | { type: 'SET_GROUP_OPACITY'; payload: { id: string; opacity: number } }
@@ -49,6 +50,7 @@ export interface PersistableConfig {
   customOverlays: OverlayConfig[];
   layerGroups: LayerGroup[];
   iembotRooms: string[];
+  iembotTelegramNotify: boolean;
   animationSpeed: number;
   frameCount: number;
   radarProduct: RadarProductId;
@@ -92,6 +94,7 @@ export const initialState: AppState = {
     rooms: ['botstalk'],
     pollInterval: 10000,
     enabled: true,
+    telegramNotify: false,
   },
   iembotPanelOpen: false,
   iembotUnread: 0,
@@ -142,6 +145,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, iembotUnread: 0 };
     case 'SET_IEMBOT_ROOMS':
       return { ...state, iembotConfig: { ...state.iembotConfig, rooms: action.payload } };
+    case 'SET_IEMBOT_TELEGRAM':
+      return { ...state, iembotConfig: { ...state.iembotConfig, telegramNotify: action.payload } };
     case 'ADD_OVERLAY':
       return { ...state, overlays: [...state.overlays, action.payload] };
     case 'SET_OVERLAY_GEOJSON':
@@ -166,6 +171,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.iembotRooms) {
         newState.iembotConfig = { ...newState.iembotConfig, rooms: cfg.iembotRooms };
+      }
+      if (cfg.iembotTelegramNotify !== undefined) {
+        newState.iembotConfig = { ...newState.iembotConfig, telegramNotify: cfg.iembotTelegramNotify };
       }
       if (cfg.animationSpeed !== undefined) {
         newState.radarState = { ...newState.radarState, animationSpeed: cfg.animationSpeed };

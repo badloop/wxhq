@@ -13,6 +13,7 @@ export function extractConfig(state: AppState): PersistableConfig {
     customOverlays: state.overlays.filter(o => o.category === 'custom'),
     layerGroups: state.layerGroups,
     iembotRooms: state.iembotConfig.rooms,
+    iembotTelegramNotify: state.iembotConfig.telegramNotify,
     animationSpeed: state.radarState.animationSpeed,
     frameCount: state.radarState.frameCount,
     radarProduct: state.radarState.radarProduct,

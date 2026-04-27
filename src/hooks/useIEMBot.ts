@@ -27,12 +27,40 @@ function playNotificationSound() {
   }
 }
 
+/** Strip HTML tags for plain-text Telegram notification */
+function stripHtml(html: string): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+}
+
+/** Send IEMBot message summary to Telegram via JARVIS bot */
+async function sendTelegramNotification(messages: Array<{ room: string; text: string; productId: string }>) {
+  try {
+    const lines = messages.map(m => {
+      const prefix = m.productId ? `[${m.room}] ${m.productId}` : `[${m.room}]`;
+      return `${prefix}\n${m.text}`;
+    });
+    const body = `IEMBot (${messages.length} new):\n\n${lines.join('\n\n')}`;
+    await fetch('http://localhost:5010/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: body }),
+    });
+  } catch {
+    // Telegram bot may not be running — silent fail
+  }
+}
+
 export function useIEMBot(rooms: string[], pollInterval = 10000) {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
   const seqnumRef = useRef<Record<string, number>>({});
   const [isConnected, setIsConnected] = useState(false);
   const initialLoadRef = useRef(true);
   const audioEnabledRef = useRef(true);
+  // Snapshot telegramNotify into a ref so the poll callback doesn't go stale
+  const telegramEnabledRef = useRef(state.iembotConfig.telegramNotify);
+  telegramEnabledRef.current = state.iembotConfig.telegramNotify;
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     audioEnabledRef.current = enabled;
@@ -41,6 +69,7 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const poll = useCallback(async () => {
     let anySuccess = false;
     let newMessageCount = 0;
+    const telegramQueue: Array<{ room: string; text: string; productId: string }> = [];
 
     for (const room of rooms) {
       try {
@@ -52,6 +81,7 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
           let maxSeq = lastSeq;
           for (const msg of messages) {
             if (msg.seqnum > maxSeq) maxSeq = msg.seqnum;
+            const cleanedHtml = cleanMessageHtml(msg.message);
             dispatch({
               type: 'ADD_IEMBOT_MSG',
               payload: {
@@ -59,12 +89,20 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
                 timestamp: msg.ts,
                 author: msg.author,
                 productId: msg.product_id ?? '',
-                message: cleanMessageHtml(msg.message),
+                message: cleanedHtml,
                 room,
                 read: false,
               },
             });
             newMessageCount++;
+            // Queue for telegram (only non-initial messages)
+            if (!initialLoadRef.current) {
+              telegramQueue.push({
+                room,
+                text: stripHtml(cleanedHtml),
+                productId: msg.product_id ?? '',
+              });
+            }
           }
           seqnumRef.current[room] = maxSeq;
         }
@@ -79,6 +117,12 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
     if (newMessageCount > 0 && !initialLoadRef.current && audioEnabledRef.current) {
       playNotificationSound();
     }
+
+    // Send Telegram notification for new messages (not initial load)
+    if (telegramQueue.length > 0 && telegramEnabledRef.current) {
+      sendTelegramNotification(telegramQueue);
+    }
+
     initialLoadRef.current = false;
   }, [rooms, dispatch]);
 
