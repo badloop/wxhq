@@ -120,6 +120,7 @@ export function MessageList({ messages, filter, dispatch }: MessageListProps) {
             </div>
           </div>
           <div
+            className="iembot-msg"
             style={{
               fontSize: BASE_SIZE,
               fontFamily: FONT,

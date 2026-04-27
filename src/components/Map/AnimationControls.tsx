@@ -116,15 +116,39 @@ export function AnimationControls() {
         }
       </span>
 
-      <div style={{ display: 'flex', gap: 2, marginLeft: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 8 }}>
+        <span style={{ color: '#606070', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Layout</span>
         {([1, 2, 4] as const).map(n => (
           <button
             key={n}
-            style={{ ...btn, padding: '6px 10px', fontSize: 12, background: layout === n ? 'rgba(0,240,255,0.15)' : 'transparent' }}
+            style={{
+              ...btn,
+              padding: 4,
+              width: 28,
+              height: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: layout === n ? 'rgba(0,240,255,0.15)' : 'transparent',
+            }}
             onClick={() => dispatch({ type: 'SET_LAYOUT', payload: n })}
             title={`${n} pane${n > 1 ? 's' : ''}`}
           >
-            {n}
+            <span style={{
+              display: 'grid',
+              gridTemplateColumns: n >= 2 ? '1fr 1fr' : '1fr',
+              gridTemplateRows: n === 4 ? '1fr 1fr' : '1fr',
+              gap: 1.5,
+              width: 16,
+              height: 12,
+            }}>
+              {Array.from({ length: n }, (_, i) => (
+                <span key={i} style={{
+                  background: layout === n ? '#00f0ff' : 'rgba(0,240,255,0.4)',
+                  borderRadius: 1,
+                }} />
+              ))}
+            </span>
           </button>
         ))}
       </div>
