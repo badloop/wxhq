@@ -50,6 +50,28 @@ export function loadConfig(): Partial<PersistableConfig> | null {
   }
 }
 
+const MESSAGES_KEY = 'wxhq-iembot-messages';
+
+/** Save IEMBot messages to localStorage (separate from config to keep YAML lean) */
+export function saveIEMBotMessages(messages: import('../types/iembot').IEMBotMessage[]): void {
+  try {
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+  } catch {
+    // Storage full — silently fail
+  }
+}
+
+/** Load persisted IEMBot messages */
+export function loadIEMBotMessages(): import('../types/iembot').IEMBotMessage[] {
+  try {
+    const raw = localStorage.getItem(MESSAGES_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as import('../types/iembot').IEMBotMessage[];
+  } catch {
+    return [];
+  }
+}
+
 /** Export config as downloadable YAML file */
 export function exportConfig(state: AppState): void {
   const config = extractConfig(state);

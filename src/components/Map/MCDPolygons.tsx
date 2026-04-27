@@ -3,9 +3,10 @@ import { useApp } from '../../context/AppContext';
 
 export function MCDPolygons() {
   const { state } = useApp();
-  const { mcdPolygons } = state;
+  const { mcdPolygons, refLayers } = state;
+  const iembotLayer = refLayers.iembot;
 
-  if (mcdPolygons.length === 0) return null;
+  if (!iembotLayer?.enabled || mcdPolygons.length === 0) return null;
 
   return (
     <>
@@ -14,9 +15,9 @@ export function MCDPolygons() {
           key={mcd.id}
           positions={mcd.coordinates}
           pathOptions={{
-            color: '#ffaa00',
-            weight: 2,
-            opacity: 0.8,
+            color: iembotLayer.color,
+            weight: iembotLayer.weight,
+            opacity: iembotLayer.opacity,
             dashArray: '8 6',
             fill: false,
             interactive: true,

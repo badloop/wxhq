@@ -98,6 +98,7 @@ const REF_LAYER_DEFS = [
   { key: 'stateLines', label: 'State Lines' },
   { key: 'countyLines', label: 'County Lines' },
   { key: 'radarSites', label: 'Radar Sites' },
+  { key: 'iembot', label: 'IEMBot' },
 ] as const;
 
 function RefLayerSection() {

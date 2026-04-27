@@ -142,6 +142,7 @@ export const initialState: AppState = {
     stateLines: { enabled: true, color: '#888888', weight: 1, opacity: 0.6 },
     countyLines: { enabled: false, color: '#555555', weight: 0.5, opacity: 0.4 },
     radarSites: { enabled: true, color: '#00f0ff', weight: 1, opacity: 1 },
+    iembot: { enabled: true, color: '#ffaa00', weight: 2, opacity: 0.8 },
   },
   mcdPolygons: [],
   layout: 1,

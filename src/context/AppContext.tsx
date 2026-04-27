@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef } from 
 import type { Dispatch } from 'react';
 import type { AppState, AppAction } from './AppReducer';
 import { appReducer, initialState } from './AppReducer';
-import { loadConfig, saveConfig } from '../services/configService';
+import { loadConfig, saveConfig, loadIEMBotMessages, saveIEMBotMessages } from '../services/configService';
 
 const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction> }>({
   state: initialState,
@@ -12,11 +12,17 @@ const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState, () => {
     // Load saved config into initial state
+    let s = initialState;
     const saved = loadConfig();
     if (saved) {
-      return appReducer(initialState, { type: 'LOAD_CONFIG', payload: saved });
+      s = appReducer(s, { type: 'LOAD_CONFIG', payload: saved });
     }
-    return initialState;
+    // Restore persisted IEMBot messages (filter out any that were dismissed)
+    const msgs = loadIEMBotMessages();
+    if (msgs.length > 0) {
+      s = { ...s, iembotMessages: msgs.filter(m => !s.iembotDismissed.includes(m.seqnum)) };
+    }
+    return s;
   });
 
   // Auto-save config on relevant state changes (debounced)
@@ -40,7 +46,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.radarState.frameCount !== state.radarState.frameCount ||
       prev.radarState.radarProduct !== state.radarState.radarProduct;
 
+    const messagesChanged = prev.iembotMessages !== state.iembotMessages;
+
     prevStateRef.current = state;
+
+    // Persist messages separately (no debounce — they change infrequently)
+    if (messagesChanged) {
+      saveIEMBotMessages(state.iembotMessages);
+    }
 
     if (!changed) return;
 

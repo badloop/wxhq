@@ -70,9 +70,14 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const [isConnected, setIsConnected] = useState(false);
   const seededRef = useRef(false);
   const mcdScannedRef = useRef(false);
+
   const audioEnabledRef = useRef(true);
   const telegramEnabledRef = useRef(state.iembotConfig.telegramNotify);
   telegramEnabledRef.current = state.iembotConfig.telegramNotify;
+
+  // Keep a ref to dismissed seqnums so poll callback can check without stale closure
+  const dismissedRef = useRef(state.iembotDismissed);
+  dismissedRef.current = state.iembotDismissed;
 
   const setAudioEnabled = useCallback((enabled: boolean) => {
     audioEnabledRef.current = enabled;
@@ -93,6 +98,10 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
           let maxSeq = lastSeq;
           for (const msg of messages) {
             if (msg.seqnum > maxSeq) maxSeq = msg.seqnum;
+
+            // Skip if already dismissed (user cleared it previously)
+            if (dismissedRef.current.includes(msg.seqnum)) continue;
+
             const cleanedHtml = cleanMessageHtml(msg.message);
             dispatch({
               type: 'ADD_IEMBOT_MSG',
@@ -162,7 +171,7 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
     poll();
     const id = setInterval(poll, pollInterval);
 
-    // One-time: scan existing messages for MCD polygons
+    // One-time: scan persisted messages for MCD polygons on startup
     if (!mcdScannedRef.current) {
       mcdScannedRef.current = true;
       for (const msg of state.iembotMessages) {
