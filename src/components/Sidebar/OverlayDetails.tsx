@@ -243,8 +243,8 @@ function MCDDetail({ feature, color }: { feature: GeoJSON.Feature; color: string
           lineHeight: 1.5,
         }}>
           <Field label="Valid" value={`${p.valid_start} - ${p.valid_end}`} />
-          {p.areas && <Field label="Areas" value={p.areas} multiline />}
-          {p.concerning && <Field label="Concerning" value={p.concerning} multiline />}
+          {p.areas && <Field label="Areas" value={stripHtml(p.areas)} multiline />}
+          {p.concerning && <Field label="Concerning" value={stripHtml(p.concerning)} multiline />}
           {p.url && (
             <div style={{ marginTop: 6 }}>
               <a
@@ -377,7 +377,7 @@ function GenericDetail({ feature, color }: { feature: GeoJSON.Feature; color: st
           lineHeight: 1.5,
         }}>
           {keys.map(k => (
-            <Field key={k} label={k} value={String(p[k])} multiline={String(p[k]).length > 80} />
+            <Field key={k} label={k} value={stripHtml(String(p[k]))} multiline={String(p[k]).length > 80} />
           ))}
         </div>
       )}

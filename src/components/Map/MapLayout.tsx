@@ -59,7 +59,7 @@ export function MapLayout() {
           }}>
             <RadarPane
               paneIndex={i}
-              radarProduct={paneProducts[i] || 'sr_bref'}
+              radarProduct={paneProducts[i] || 'N0B'}
               onProductChange={(p: RadarProductId) => dispatch({ type: 'SET_PANE_PRODUCT', payload: { pane: i, product: p } })}
               showControls={effectiveLayout > 1}
             />

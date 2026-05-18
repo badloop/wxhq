@@ -1,23 +1,33 @@
 import L from 'leaflet';
-import { CircleMarker, Tooltip } from 'react-leaflet';
+import { CircleMarker, Tooltip, Pane, useMap } from 'react-leaflet';
+import { useEffect } from 'react';
 import { nexradSites } from '../../data/nexradSites';
 import { useApp } from '../../context/AppContext';
 import { fetchRadarFrames } from '../../services/radarApi';
 import type { NexradSite } from '../../types/radar';
 
+const MARKER_PANE = 'nexrad-markers';
+const MARKER_Z = 650; // Always above radar imagery (400-range)
+
 export function NexradMarkers() {
   const { state, dispatch } = useApp();
   const selectedId = state.radarState.selectedSite?.id;
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map.getPane(MARKER_PANE)) {
+      const pane = map.createPane(MARKER_PANE);
+      pane.style.zIndex = String(MARKER_Z);
+    }
+  }, [map]);
 
   if (!state.refLayers.radarSites?.enabled && !selectedId) return null;
 
   const showAll = state.refLayers.radarSites?.enabled;
 
   const handleClick = async (site: NexradSite, e: L.LeafletMouseEvent) => {
-    // Stop the click from propagating to the map (which would open sidebar)
     L.DomEvent.stopPropagation(e);
     dispatch({ type: 'SELECT_SITE', payload: site });
-    // Update sidebar data without opening it
     dispatch({ type: 'SET_SIDEBAR_LATLON', payload: [site.lat, site.lon] });
     try {
       const frames = await fetchRadarFrames(site.id, state.radarState.frameCount, state.radarState.radarProduct);
@@ -28,7 +38,7 @@ export function NexradMarkers() {
   };
 
   return (
-    <>
+    <Pane name={MARKER_PANE} style={{ zIndex: MARKER_Z }}>
       {nexradSites
         .filter(site => showAll || site.id === selectedId)
         .map(site => (
@@ -42,6 +52,7 @@ export function NexradMarkers() {
               fillOpacity: site.id === selectedId ? 0.9 : 0.6,
               weight: site.id === selectedId ? 2 : 1,
             }}
+            pane={MARKER_PANE}
             eventHandlers={{ click: (e) => handleClick(site, e) }}
           >
             <Tooltip direction="top" offset={[0, -8]}>
@@ -49,6 +60,6 @@ export function NexradMarkers() {
             </Tooltip>
           </CircleMarker>
         ))}
-    </>
+    </Pane>
   );
 }

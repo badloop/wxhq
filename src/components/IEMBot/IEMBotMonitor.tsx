@@ -1,18 +1,47 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MessageList } from './MessageList';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 const PRESET_ROOMS = ['botstalk', 'spcchat', 'emergchat', 'pdschat', 'dmgchat'];
+const MIN_WIDTH = 320;
+const MIN_HEIGHT = 250;
 
 export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: boolean; setAudioEnabled: (v: boolean) => void }) {
   const { state, dispatch } = useApp();
   const [filter, setFilter] = useState('');
   const [roomInput, setRoomInput] = useState('');
   const [muted, setMuted] = useState(false);
+  const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; startW: number; startH: number } | null>(null);
 
   const config = state.iembotConfig;
   const mobile = useIsMobile();
+
+  const onResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const panel = (e.target as HTMLElement).closest('[data-iembot-panel]') as HTMLElement;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startW: rect.width, startH: rect.height };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const dw = ev.clientX - dragRef.current.startX; // dragging right edge rightward = wider
+      const dh = dragRef.current.startY - ev.clientY; // dragging top edge upward = taller
+      setSize({
+        width: Math.max(MIN_WIDTH, dragRef.current.startW + dw),
+        height: Math.max(MIN_HEIGHT, dragRef.current.startH + dh),
+      });
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, []);
 
   if (!state.iembotPanelOpen) return null;
 
@@ -65,13 +94,15 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
 
   return (
     <div
+      data-iembot-panel
       style={{
         position: 'fixed',
         bottom: mobile ? 72 : 64,
         left: mobile ? 8 : 16,
         right: mobile ? 8 : undefined,
-        width: mobile ? undefined : 450,
-        maxHeight: mobile ? '70vh' : '60vh',
+        width: mobile ? undefined : (size?.width ?? 450),
+        height: mobile ? undefined : (size?.height ?? undefined),
+        maxHeight: mobile ? '70vh' : (size ? undefined : '60vh'),
         background: 'rgba(10, 10, 15, 0.95)',
         border: '1px solid rgba(0, 240, 255, 0.3)',
         boxShadow: '0 0 20px rgba(0, 240, 255, 0.1)',
@@ -82,6 +113,27 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
         overflow: 'hidden',
       }}
     >
+      {/* Resize handle (top-left corner) */}
+      {!mobile && (
+        <div
+          onMouseDown={onResizeStart}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: 16,
+            height: 16,
+            cursor: 'ne-resize',
+            zIndex: 10,
+          }}
+          title="Drag to resize"
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" style={{ position: 'absolute', top: 3, right: 3, opacity: 0.4 }}>
+            <line x1="0" y1="0" x2="10" y2="10" stroke="#00f0ff" strokeWidth="1.5" />
+            <line x1="4" y1="0" x2="10" y2="6" stroke="#00f0ff" strokeWidth="1.5" />
+          </svg>
+        </div>
+      )}
       {/* Header */}
       <div
         style={{

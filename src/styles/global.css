@@ -160,3 +160,14 @@ input[type="range"]::-moz-range-thumb {
     display: none !important;
   }
 }
+
+@keyframes wxhq-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* GPU-accelerate radar tile layer containers for smooth animation */
+.leaflet-pane .leaflet-tile-pane .leaflet-tile-container {
+  will-change: opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}

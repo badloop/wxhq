@@ -1,6 +1,9 @@
-import { Polygon, Tooltip } from 'react-leaflet';
+import { useEffect } from 'react';
+import { Polygon, Tooltip, Pane, useMap } from 'react-leaflet';
 import { useApp } from '../../context/AppContext';
 import type { IEMBotPolygon } from '../../context/AppReducer';
+
+const IEMBOT_PANE = 'overlay-iembot';
 
 /** Check if coordinates is multi-ring (array of arrays) vs single ring */
 function isMultiRing(coords: IEMBotPolygon['coordinates']): coords is [number, number][][] {
@@ -9,8 +12,23 @@ function isMultiRing(coords: IEMBotPolygon['coordinates']): coords is [number, n
 
 export function MCDPolygons() {
   const { state } = useApp();
-  const { mcdPolygons, refLayers } = state;
+  const { mcdPolygons, refLayers, layerGroups } = state;
   const iembotLayer = refLayers.iembot;
+  const map = useMap();
+
+  // Compute z-index from layer group ordering (same scheme as OverlayLayers)
+  const groupIdx = layerGroups.findIndex(g => g.id === 'iembot');
+  const zIndex = 400 + (groupIdx >= 0 ? groupIdx : 5) * 10;
+
+  useEffect(() => {
+    if (!map.getPane(IEMBOT_PANE)) {
+      const pane = map.createPane(IEMBOT_PANE);
+      pane.style.zIndex = String(zIndex);
+    } else {
+      const pane = map.getPane(IEMBOT_PANE);
+      if (pane) pane.style.zIndex = String(zIndex);
+    }
+  }, [map, zIndex]);
 
   if (!iembotLayer?.enabled || mcdPolygons.length === 0) return null;
 
@@ -24,7 +42,7 @@ export function MCDPolygons() {
   };
 
   return (
-    <>
+    <Pane name={IEMBOT_PANE} style={{ zIndex }}>
       {mcdPolygons.map(mcd => {
         const tooltip = (
           <Tooltip sticky>
@@ -34,20 +52,19 @@ export function MCDPolygons() {
         );
 
         if (isMultiRing(mcd.coordinates)) {
-          // Render each ring as a separate polygon
           return mcd.coordinates.map((ring, i) => (
-            <Polygon key={`${mcd.id}-${i}`} positions={ring} pathOptions={pathOptions}>
+            <Polygon key={`${mcd.id}-${i}`} positions={ring} pathOptions={pathOptions} pane={IEMBOT_PANE}>
               {i === 0 && tooltip}
             </Polygon>
           ));
         }
 
         return (
-          <Polygon key={mcd.id} positions={mcd.coordinates} pathOptions={pathOptions}>
+          <Polygon key={mcd.id} positions={mcd.coordinates} pathOptions={pathOptions} pane={IEMBOT_PANE}>
             {tooltip}
           </Polygon>
         );
       })}
-    </>
+    </Pane>
   );
 }

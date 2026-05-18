@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Drives a frame-based animation loop by dispatching frame index updates.
- * When `active` is true and `frameCount` > 0, runs a setInterval that
- * calls `onFrame` with the next frame index each tick.
+ * Drives a frame-based animation loop using requestAnimationFrame for smooth timing.
+ * When `active` is true and `frameCount` > 0, advances frames at the given speed.
+ * `loopDelay` adds an extra pause (ms) on the last frame before looping.
  */
 export function useRadarAnimation(
   active: boolean,
@@ -11,24 +11,45 @@ export function useRadarAnimation(
   speed: number,
   currentFrame: number,
   onFrame: (frame: number) => void,
+  loopDelay: number = 0,
 ) {
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
   const currentRef = useRef(currentFrame);
+  const lastTickRef = useRef(0);
   currentRef.current = currentFrame;
 
   useEffect(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = null;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    lastTickRef.current = 0;
 
     if (!active || frameCount === 0) return;
 
-    intervalRef.current = setInterval(() => {
-      const next = (currentRef.current + 1) % frameCount;
-      onFrame(next);
-    }, speed);
+    const tick = (now: number) => {
+      if (lastTickRef.current === 0) {
+        lastTickRef.current = now;
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
+      const cur = currentRef.current;
+      // Dwell on the last frame (most recent) before looping back
+      const delay = cur === frameCount - 1 ? speed + loopDelay : speed;
+      const elapsed = now - lastTickRef.current;
+
+      if (elapsed >= delay) {
+        const next = (cur + 1) % frameCount;
+        onFrame(next);
+        lastTickRef.current = now;
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [active, frameCount, speed, onFrame]);
+  }, [active, frameCount, speed, loopDelay, onFrame]);
 }

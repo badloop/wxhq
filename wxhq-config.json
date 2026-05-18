@@ -1,0 +1,146 @@
+{
+  "overlays": [
+    {
+      "id": "day1",
+      "enabled": true,
+      "fillMode": "outline"
+    },
+    {
+      "id": "day2",
+      "enabled": false,
+      "fillMode": "fill"
+    },
+    {
+      "id": "day3",
+      "enabled": false,
+      "fillMode": "fill"
+    },
+    {
+      "id": "warnings",
+      "enabled": true,
+      "fillMode": "outline"
+    },
+    {
+      "id": "watches",
+      "enabled": true,
+      "fillMode": "outline"
+    },
+    {
+      "id": "mcd",
+      "enabled": true,
+      "fillMode": "fill"
+    }
+  ],
+  "customOverlays": [],
+  "layerGroups": [
+    {
+      "id": "spc",
+      "name": "SPC Outlooks",
+      "opacity": 1
+    },
+    {
+      "id": "mcd",
+      "name": "Mesoscale Disc.",
+      "opacity": 0.73
+    },
+    {
+      "id": "radar",
+      "name": "Radar",
+      "opacity": 0.7
+    },
+    {
+      "id": "warnings",
+      "name": "Warnings",
+      "opacity": 1
+    },
+    {
+      "id": "watches",
+      "name": "Watches",
+      "opacity": 0.58
+    },
+    {
+      "id": "iembot",
+      "name": "IEMBot",
+      "opacity": 1
+    },
+    {
+      "id": "reference",
+      "name": "Reference",
+      "opacity": 1
+    },
+    {
+      "id": "points",
+      "name": "Points",
+      "opacity": 1
+    },
+    {
+      "id": "custom",
+      "name": "Custom",
+      "opacity": 1
+    },
+    {
+      "id": "lightning",
+      "name": "Lightning",
+      "opacity": 1
+    }
+  ],
+  "iembotRooms": [
+    "pahchat"
+  ],
+  "iembotTelegramNotify": false,
+  "iembotLastSeqnums": {
+    "botstalk": 3205510,
+    "pahchat": 3205885
+  },
+  "iembotDismissed": [],
+  "animationSpeed": 200,
+  "frameCount": 10,
+  "radarProduct": "N0B",
+  "loopDelay": 1000,
+  "mapPoints": [
+    {
+      "id": "pt-1778849553210",
+      "lat": 37.9850643,
+      "lng": -87.6971591,
+      "label": "Home",
+      "icon": "🏠",
+      "color": "#ff00aa"
+    }
+  ],
+  "refLayers": {
+    "stateLines": {
+      "enabled": true,
+      "color": "#888888",
+      "weight": 1,
+      "opacity": 0.6
+    },
+    "countyLines": {
+      "enabled": false,
+      "color": "#99c1f1",
+      "weight": 0.5,
+      "opacity": 0.4
+    },
+    "radarSites": {
+      "enabled": true,
+      "color": "#00f0ff",
+      "weight": 1,
+      "opacity": 1
+    },
+    "iembot": {
+      "enabled": true,
+      "color": "#ffaa00",
+      "weight": 2,
+      "opacity": 0.8
+    },
+    "lightning": {
+      "enabled": true,
+      "color": "#ffff00",
+      "weight": 0.5,
+      "opacity": 0.64
+    }
+  },
+  "layout": 1,
+  "paneProducts": [
+    "N0B"
+  ]
+}

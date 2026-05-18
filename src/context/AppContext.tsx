@@ -11,24 +11,28 @@ const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState, () => {
-    // Load saved config into initial state
+    // Sync init: restore IEMBot messages/polygons from localStorage
     let s = initialState;
-    const saved = loadConfig();
-    if (saved) {
-      s = appReducer(s, { type: 'LOAD_CONFIG', payload: saved });
-    }
-    // Restore persisted IEMBot messages (filter out any that were dismissed)
     const msgs = loadIEMBotMessages();
     if (msgs.length > 0) {
       s = { ...s, iembotMessages: msgs.filter(m => !s.iembotDismissed.includes(m.seqnum)) };
     }
-    // Restore persisted IEMBot polygons
     const polys = loadIEMBotPolygons();
     if (polys.length > 0) {
       s = { ...s, mcdPolygons: polys };
     }
     return s;
   });
+
+  // Load config asynchronously from JSON file
+  const configLoaded = useRef(false);
+  useEffect(() => {
+    if (configLoaded.current) return;
+    configLoaded.current = true;
+    loadConfig().then(saved => {
+      if (saved) dispatch({ type: 'LOAD_CONFIG', payload: saved });
+    });
+  }, []);
 
   // Auto-save config on relevant state changes (debounced)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,7 +53,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.paneProducts !== state.paneProducts ||
       prev.radarState.animationSpeed !== state.radarState.animationSpeed ||
       prev.radarState.frameCount !== state.radarState.frameCount ||
-      prev.radarState.radarProduct !== state.radarState.radarProduct;
+      prev.radarState.radarProduct !== state.radarState.radarProduct ||
+      prev.radarState.loopDelay !== state.radarState.loopDelay;
 
     const messagesChanged = prev.iembotMessages !== state.iembotMessages;
     const polygonsChanged = prev.mcdPolygons !== state.mcdPolygons;

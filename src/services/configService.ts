@@ -1,8 +1,5 @@
-import yaml from 'js-yaml';
 import type { AppState } from '../context/AppReducer';
 import type { PersistableConfig } from '../context/AppReducer';
-
-const STORAGE_KEY = 'wxhq-config';
 
 /** Extract persistable config from current app state */
 export function extractConfig(state: AppState): PersistableConfig {
@@ -19,6 +16,7 @@ export function extractConfig(state: AppState): PersistableConfig {
     animationSpeed: state.radarState.animationSpeed,
     frameCount: state.radarState.frameCount,
     radarProduct: state.radarState.radarProduct,
+    loopDelay: state.radarState.loopDelay,
     mapPoints: state.mapPoints,
     refLayers: state.refLayers,
     layout: state.layout,
@@ -26,23 +24,26 @@ export function extractConfig(state: AppState): PersistableConfig {
   };
 }
 
-/** Save config as YAML to localStorage */
+/** Save config to JSON file via dev server API */
 export function saveConfig(state: AppState): void {
   try {
     const config = extractConfig(state);
-    const yamlStr = yaml.dump(config, { indent: 2, lineWidth: 120, noRefs: true });
-    localStorage.setItem(STORAGE_KEY, yamlStr);
+    fetch('/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config, null, 2),
+    }).catch(err => console.error('[wxhq] Failed to save config:', err));
   } catch (err) {
     console.error('[wxhq] Failed to save config:', err);
   }
 }
 
-/** Load config from localStorage YAML */
-export function loadConfig(): Partial<PersistableConfig> | null {
+/** Load config from JSON file via dev server API */
+export async function loadConfig(): Promise<Partial<PersistableConfig> | null> {
   try {
-    const yamlStr = localStorage.getItem(STORAGE_KEY);
-    if (!yamlStr) return null;
-    const config = yaml.load(yamlStr) as Partial<PersistableConfig>;
+    const res = await fetch('/api/config');
+    if (!res.ok) return null;
+    const config = await res.json() as Partial<PersistableConfig> | null;
     return config;
   } catch (err) {
     console.error('[wxhq] Failed to load config:', err);
@@ -93,15 +94,15 @@ export function loadIEMBotPolygons(): import('../context/AppReducer').IEMBotPoly
   }
 }
 
-/** Export config as downloadable YAML file */
+/** Export config as downloadable JSON file */
 export function exportConfig(state: AppState): void {
   const config = extractConfig(state);
-  const yamlStr = yaml.dump(config, { indent: 2, lineWidth: 120, noRefs: true });
-  const blob = new Blob([yamlStr], { type: 'text/yaml' });
+  const json = JSON.stringify(config, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'wxhq-config.yaml';
+  a.download = 'wxhq-config.json';
   a.click();
   URL.revokeObjectURL(url);
 }

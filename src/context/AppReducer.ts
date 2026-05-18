@@ -38,6 +38,7 @@ export interface AppState {
   mcdPolygons: IEMBotPolygon[];
   layout: 1 | 2 | 4;
   paneProducts: RadarProductId[];
+  tilesLoading: boolean;
 }
 
 export type AppAction =
@@ -48,6 +49,7 @@ export type AppAction =
   | { type: 'SET_ANIMATION_SPEED'; payload: number }
   | { type: 'SET_FRAME_COUNT'; payload: number }
   | { type: 'SET_RADAR_PRODUCT'; payload: RadarProductId }
+  | { type: 'SET_LOOP_DELAY'; payload: number }
   | { type: 'TOGGLE_OVERLAY'; payload: string }
   | { type: 'SET_OVERLAY_FILL_MODE'; payload: { id: string; fillMode: 'fill' | 'outline' } }
   | { type: 'OPEN_SIDEBAR'; payload: [number, number] }
@@ -73,6 +75,7 @@ export type AppAction =
   | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } }
   | { type: 'SET_LAYOUT'; payload: 1 | 2 | 4 }
   | { type: 'SET_PANE_PRODUCT'; payload: { pane: number; product: RadarProductId } }
+  | { type: 'SET_TILES_LOADING'; payload: boolean }
   | { type: 'ADD_MCD_POLYGON'; payload: IEMBotPolygon }
   | { type: 'REMOVE_MCD_POLYGON'; payload: string };
 
@@ -88,6 +91,7 @@ export interface PersistableConfig {
   animationSpeed: number;
   frameCount: number;
   radarProduct: RadarProductId;
+  loopDelay: number;
   mapPoints: MapPoint[];
   refLayers: Record<string, RefLayerConfig>;
   layout: 1 | 2 | 4;
@@ -110,6 +114,7 @@ export const defaultLayerGroups: LayerGroup[] = [
   { id: 'warnings', name: 'Warnings', opacity: 1 },
   { id: 'watches', name: 'Watches', opacity: 1 },
   { id: 'iembot', name: 'IEMBot', opacity: 1 },
+  { id: 'lightning', name: 'Lightning', opacity: 1 },
   { id: 'reference', name: 'Reference', opacity: 1 },
   { id: 'points', name: 'Points', opacity: 1 },
   { id: 'custom', name: 'Custom', opacity: 1 },
@@ -121,9 +126,10 @@ export const initialState: AppState = {
     frames: [],
     currentFrame: 0,
     isAnimating: false,
-    animationSpeed: 500,
+    animationSpeed: 200,
     frameCount: 10,
-    radarProduct: 'sr_bref',
+    radarProduct: 'N0B',
+    loopDelay: 1000,
   },
   overlays: defaultOverlays,
   overlayGeoJSON: {},
@@ -147,10 +153,12 @@ export const initialState: AppState = {
     countyLines: { enabled: false, color: '#555555', weight: 0.5, opacity: 0.4 },
     radarSites: { enabled: true, color: '#00f0ff', weight: 1, opacity: 1 },
     iembot: { enabled: true, color: '#ffaa00', weight: 2, opacity: 0.8 },
+    lightning: { enabled: true, color: '#ffff00', weight: 1, opacity: 0.9 },
   },
   mcdPolygons: [],
   layout: 1,
-  paneProducts: ['sr_bref'],
+  paneProducts: ['N0B'],
+  tilesLoading: false,
 };
 
 /** Extract the polygon ID that would have been generated for this message */
@@ -180,13 +188,15 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_CURRENT_FRAME':
       return { ...state, radarState: { ...state.radarState, currentFrame: action.payload } };
     case 'SET_ANIMATING':
-      return { ...state, radarState: { ...state.radarState, isAnimating: action.payload } };
+      return { ...state, radarState: { ...state.radarState, isAnimating: action.payload }, tilesLoading: action.payload };
     case 'SET_ANIMATION_SPEED':
       return { ...state, radarState: { ...state.radarState, animationSpeed: action.payload } };
     case 'SET_FRAME_COUNT':
       return { ...state, radarState: { ...state.radarState, frameCount: action.payload } };
     case 'SET_RADAR_PRODUCT':
       return { ...state, radarState: { ...state.radarState, radarProduct: action.payload, frames: [], currentFrame: 0, isAnimating: false } };
+    case 'SET_LOOP_DELAY':
+      return { ...state, radarState: { ...state.radarState, loopDelay: action.payload } };
     case 'TOGGLE_OVERLAY':
       return { ...state, overlays: state.overlays.map(o => o.id === action.payload ? { ...o, enabled: !o.enabled } : o) };
     case 'SET_OVERLAY_FILL_MODE':
@@ -284,6 +294,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (cfg.frameCount !== undefined) {
         newState.radarState = { ...newState.radarState, frameCount: cfg.frameCount };
       }
+      if (cfg.loopDelay !== undefined) {
+        newState.radarState = { ...newState.radarState, loopDelay: cfg.loopDelay };
+      }
       if (cfg.radarProduct) {
         const validIds = RADAR_PRODUCTS.map(p => p.id) as readonly string[];
         if (validIds.includes(cfg.radarProduct)) {
@@ -327,7 +340,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.paneProducts) {
         const validIds = RADAR_PRODUCTS.map(p => p.id) as readonly string[];
-        newState.paneProducts = cfg.paneProducts.map(p => validIds.includes(p) ? p : 'sr_bref') as RadarProductId[];
+        newState.paneProducts = cfg.paneProducts.map(p => validIds.includes(p) ? p : 'N0B') as RadarProductId[];
       }
 
       return newState;
@@ -345,7 +358,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_LAYOUT': {
       const newLayout = action.payload;
       const paneProducts = [...state.paneProducts];
-      while (paneProducts.length < newLayout) paneProducts.push('sr_bref');
+      while (paneProducts.length < newLayout) paneProducts.push('N0B');
       return { ...state, layout: newLayout, paneProducts: paneProducts.slice(0, newLayout) };
     }
     case 'SET_PANE_PRODUCT': {
@@ -354,6 +367,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       paneProducts[pane] = product;
       return { ...state, paneProducts };
     }
+    case 'SET_TILES_LOADING':
+      return { ...state, tilesLoading: action.payload };
     case 'ADD_MCD_POLYGON': {
       // Deduplicate by id
       if (state.mcdPolygons.some(p => p.id === action.payload.id)) return state;

@@ -15,13 +15,24 @@ const btn: CSSProperties = {
   cursor: 'pointer',
 };
 
+const spinnerStyle: CSSProperties = {
+  width: 18,
+  height: 18,
+  border: '2px solid rgba(0, 240, 255, 0.2)',
+  borderTopColor: '#00f0ff',
+  borderRadius: '50%',
+  animation: 'wxhq-spin 0.8s linear infinite',
+  flexShrink: 0,
+};
+
 const frameCounts = [5, 10, 15, 20];
 
 export function AnimationControls() {
   const { state, dispatch } = useApp();
-  const { frames, animationSpeed, frameCount, currentFrame, isAnimating, selectedSite, radarProduct } = state.radarState;
-  const { layout } = state;
+  const { frames, animationSpeed, frameCount, currentFrame, isAnimating, selectedSite, radarProduct, loopDelay } = state.radarState;
+  const { layout, tilesLoading } = state;
   const mobile = useIsMobile();
+  const showSpinner = isAnimating && tilesLoading;
 
   const displayFrames = selectedSite ? frames : [];
   const totalFrames = selectedSite ? frames.length : 12;
@@ -73,6 +84,7 @@ export function AnimationControls() {
         </div>
         {/* Row 2: transport + key controls */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+          {showSpinner && <div style={spinnerStyle} title="Loading radar tiles..." />}
           <button style={mobileBtn} onClick={() => step(-1)}>⏮</button>
           <button style={mobileBtn} onClick={togglePlay}>{isAnimating ? '⏸' : '▶'}</button>
           <button style={mobileBtn} onClick={() => step(1)}>⏭</button>
@@ -113,6 +125,7 @@ export function AnimationControls() {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       gap: 12, padding: '0 16px', zIndex: 1000, fontFamily: 'var(--font-mono)',
     }}>
+      {showSpinner && <div style={spinnerStyle} title="Loading radar tiles..." />}
       <button style={btn} onClick={() => step(-1)} title="Step back">⏮</button>
       <button style={btn} onClick={togglePlay}>
         {isAnimating ? '⏸' : '▶'}
@@ -121,10 +134,22 @@ export function AnimationControls() {
 
       <label style={{ color: '#a0a0b0', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
         Speed
-        <input type="range" min={100} max={1500} step={100} value={animationSpeed}
-          onChange={e => dispatch({ type: 'SET_ANIMATION_SPEED', payload: Number(e.target.value) })}
+        <input type="range" min={100} max={1500} step={100} value={1600 - animationSpeed}
+          onChange={e => dispatch({ type: 'SET_ANIMATION_SPEED', payload: 1600 - Number(e.target.value) })}
           style={{ width: 80, accentColor: '#00f0ff' }}
         />
+      </label>
+
+      <label style={{ color: '#a0a0b0', fontSize: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        Loop Delay
+        <select value={loopDelay}
+          onChange={e => dispatch({ type: 'SET_LOOP_DELAY', payload: Number(e.target.value) })}
+          style={{ ...btn, padding: '4px 8px' }}
+        >
+          <option value={500}>0.5s</option>
+          <option value={1000}>1s</option>
+          <option value={1500}>1.5s</option>
+        </select>
       </label>
 
       <select value={frameCount}

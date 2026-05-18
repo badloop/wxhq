@@ -5,6 +5,7 @@ import { SingleSiteRadar } from './SingleSiteRadar';
 import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
+import { LightningLayer } from './LightningLayer';
 import { MapClickHandler } from '../../hooks/useMapClick';
 import 'leaflet/dist/leaflet.css';
 
@@ -25,6 +26,7 @@ export function RadarMap() {
       <SingleSiteRadar />
       <ReferenceLayers />
       <OverlayLayers />
+      <LightningLayer />
       <MapPoints />
       <NexradMarkers />
       <MapClickHandler />
