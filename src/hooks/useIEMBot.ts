@@ -52,6 +52,24 @@ async function sendTelegramNotification(messages: Array<{ room: string; text: st
   }
 }
 
+function sendDesktopNotification(messages: Array<{ room: string; text: string; productId: string }>) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+    return;
+  }
+  if (Notification.permission !== 'granted') return;
+
+  for (const m of messages.slice(0, 5)) {
+    const title = m.productId ? `[${m.room}] ${m.productId}` : `[${m.room}] IEMBot`;
+    new Notification(title, {
+      body: m.text.slice(0, 200),
+      icon: '/lightning.svg',
+      tag: `iembot-${Date.now()}-${m.room}`,
+    });
+  }
+}
+
 /**
  * Boot timestamp — set once when the module first loads.
  * Survives HMR since module-level state persists across hot reloads.
@@ -74,6 +92,8 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const audioEnabledRef = useRef(true);
   const telegramEnabledRef = useRef(state.iembotConfig.telegramNotify);
   telegramEnabledRef.current = state.iembotConfig.telegramNotify;
+  const desktopNotifyRef = useRef(state.iembotConfig.desktopNotify);
+  desktopNotifyRef.current = state.iembotConfig.desktopNotify;
 
   // Keep a ref to dismissed seqnums so poll callback can check without stale closure
   const dismissedRef = useRef(state.iembotDismissed);
@@ -151,6 +171,11 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
     // Telegram: only for messages after boot
     if (telegramQueue.length > 0 && telegramEnabledRef.current) {
       sendTelegramNotification(telegramQueue);
+    }
+
+    // Desktop notifications: only for messages after boot
+    if (telegramQueue.length > 0 && desktopNotifyRef.current) {
+      sendDesktopNotification(telegramQueue);
     }
   }, [rooms, dispatch]);
 

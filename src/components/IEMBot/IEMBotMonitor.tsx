@@ -173,6 +173,22 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
             TG
           </button>
           <button
+            onClick={() => {
+              if (!config.desktopNotify && 'Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+              }
+              dispatch({ type: 'SET_IEMBOT_DESKTOP_NOTIFY', payload: !config.desktopNotify });
+            }}
+            style={{
+              ...btnStyle,
+              color: config.desktopNotify ? '#39ff14' : '#606070',
+              borderColor: config.desktopNotify ? 'rgba(57,255,20,0.3)' : 'rgba(0,240,255,0.15)',
+            }}
+            title={config.desktopNotify ? 'Desktop notifications ON' : 'Desktop notifications OFF'}
+          >
+            🔔
+          </button>
+          <button
             onClick={() => { setMuted(!muted); setAudioEnabled(muted); }}
             style={{ ...btnStyle, color: muted ? '#ff4444' : '#39ff14', borderColor: muted ? 'rgba(255,68,68,0.3)' : 'rgba(57,255,20,0.3)' }}
             title={muted ? 'Unmute notifications' : 'Mute notifications'}

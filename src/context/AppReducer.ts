@@ -63,6 +63,7 @@ export type AppAction =
   | { type: 'MARK_IEMBOT_READ' }
   | { type: 'SET_IEMBOT_ROOMS'; payload: string[] }
   | { type: 'SET_IEMBOT_TELEGRAM'; payload: boolean }
+  | { type: 'SET_IEMBOT_DESKTOP_NOTIFY'; payload: boolean }
   | { type: 'SET_IEMBOT_SEQNUMS'; payload: Record<string, number> }
   | { type: 'ADD_OVERLAY'; payload: OverlayConfig }
   | { type: 'SET_OVERLAY_GEOJSON'; payload: { id: string; geojson: GeoJSON.FeatureCollection } }
@@ -86,6 +87,7 @@ export interface PersistableConfig {
   layerGroups: LayerGroup[];
   iembotRooms: string[];
   iembotTelegramNotify: boolean;
+  iembotDesktopNotify: boolean;
   iembotLastSeqnums: Record<string, number>;
   iembotDismissed: number[];
   animationSpeed: number;
@@ -142,6 +144,7 @@ export const initialState: AppState = {
     pollInterval: 10000,
     enabled: true,
     telegramNotify: false,
+    desktopNotify: false,
   },
   iembotPanelOpen: false,
   iembotUnread: 0,
@@ -249,6 +252,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, iembotConfig: { ...state.iembotConfig, rooms: action.payload } };
     case 'SET_IEMBOT_TELEGRAM':
       return { ...state, iembotConfig: { ...state.iembotConfig, telegramNotify: action.payload } };
+    case 'SET_IEMBOT_DESKTOP_NOTIFY':
+      return { ...state, iembotConfig: { ...state.iembotConfig, desktopNotify: action.payload } };
     case 'SET_IEMBOT_SEQNUMS':
       return { ...state, iembotLastSeqnums: { ...state.iembotLastSeqnums, ...action.payload } };
     case 'ADD_OVERLAY':
@@ -281,6 +286,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.iembotTelegramNotify !== undefined) {
         newState.iembotConfig = { ...newState.iembotConfig, telegramNotify: cfg.iembotTelegramNotify };
+      }
+      if (cfg.iembotDesktopNotify !== undefined) {
+        newState.iembotConfig = { ...newState.iembotConfig, desktopNotify: cfg.iembotDesktopNotify };
       }
       if (cfg.iembotLastSeqnums) {
         newState.iembotLastSeqnums = cfg.iembotLastSeqnums;

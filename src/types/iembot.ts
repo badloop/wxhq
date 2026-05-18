@@ -21,4 +21,5 @@ export interface IEMBotConfig {
   pollInterval: number; // ms (default 10000)
   enabled: boolean;
   telegramNotify: boolean;
+  desktopNotify: boolean;
 }
