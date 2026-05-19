@@ -308,6 +308,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       }
       if (cfg.iembotDismissed) {
         newState.iembotDismissed = cfg.iembotDismissed;
+        // Filter out dismissed messages that were loaded from localStorage before config was ready
+        newState.iembotMessages = newState.iembotMessages.filter(m => !cfg.iembotDismissed!.includes(m.seqnum));
       }
       if (cfg.animationSpeed !== undefined) {
         newState.radarState = { ...newState.radarState, animationSpeed: cfg.animationSpeed };
