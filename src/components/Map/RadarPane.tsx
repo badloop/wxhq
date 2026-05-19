@@ -8,6 +8,7 @@ import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
 import { MCDPolygons } from './MCDPolygons';
 import { LightningLayer } from './LightningLayer';
+import { WebcamLayer } from './WebcamLayer';
 import { MapClickHandler } from '../../hooks/useMapClick';
 import { useMapSync } from './MapSyncContext';
 import { useApp } from '../../context/AppContext';
@@ -90,6 +91,7 @@ export function RadarPane({ paneIndex, radarProduct, onProductChange, showContro
         <OverlayLayers />
         <MCDPolygons />
         <LightningLayer />
+        <WebcamLayer />
         <MapPoints />
         <NexradMarkers />
         <MapClickHandler />

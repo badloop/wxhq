@@ -6,6 +6,7 @@ import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
 import { LightningLayer } from './LightningLayer';
+import { WebcamLayer } from './WebcamLayer';
 import { MapClickHandler } from '../../hooks/useMapClick';
 import 'leaflet/dist/leaflet.css';
 
@@ -27,6 +28,7 @@ export function RadarMap() {
       <ReferenceLayers />
       <OverlayLayers />
       <LightningLayer />
+      <WebcamLayer />
       <MapPoints />
       <NexradMarkers />
       <MapClickHandler />

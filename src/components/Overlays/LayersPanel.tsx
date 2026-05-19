@@ -99,6 +99,7 @@ const REF_LAYER_DEFS = [
   { key: 'countyLines', label: 'County Lines' },
   { key: 'radarSites', label: 'Radar Sites' },
   { key: 'lightning', label: 'Lightning (GLM)' },
+  { key: 'webcams', label: 'Webcams' },
 ] as const;
 
 function RefLayerContent() {
