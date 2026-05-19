@@ -54,12 +54,14 @@ async function sendTelegramNotification(messages: Array<{ room: string; text: st
 
 function sendDesktopNotification(messages: Array<{ room: string; text: string; productId: string }>) {
   if (!('Notification' in window)) return;
-  if (Notification.permission === 'default') {
-    Notification.requestPermission();
+  if (Notification.permission !== 'granted') {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     return;
   }
-  if (Notification.permission !== 'granted') return;
 
+  console.log(`[IEMBot] Sending ${messages.length} desktop notification(s)`);
   for (const m of messages.slice(0, 5)) {
     const title = m.productId ? `[${m.room}] ${m.productId}` : `[${m.room}] IEMBot`;
     new Notification(title, {
@@ -175,6 +177,7 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
 
     // Desktop notifications: only for messages after boot
     if (telegramQueue.length > 0 && desktopNotifyRef.current) {
+      console.log(`[IEMBot] Desktop notify triggered, ${telegramQueue.length} msg(s), permission=${Notification?.permission}`);
       sendDesktopNotification(telegramQueue);
     }
   }, [rooms, dispatch]);

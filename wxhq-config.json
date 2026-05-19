@@ -96,7 +96,7 @@
   "iembotDesktopNotify": false,
   "iembotLastSeqnums": {
     "botstalk": 3235773,
-    "pahchat": 3233726
+    "pahchat": 3237817
   },
   "iembotDismissed": [],
   "animationSpeed": 200,
@@ -139,7 +139,7 @@
       "opacity": 0.8
     },
     "lightning": {
-      "enabled": false,
+      "enabled": true,
       "color": "#ffff00",
       "weight": 0.5,
       "opacity": 0.64
