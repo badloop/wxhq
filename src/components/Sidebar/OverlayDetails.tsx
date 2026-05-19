@@ -432,19 +432,16 @@ function IEMBotDetail({ polygon }: { polygon: IEMBotPolygon }) {
         <span style={{ fontSize: BASE_SIZE - 2, color: '#a0a0b0' }}>{open ? '▲' : '▼'}</span>
       </div>
       {open && (
-        <div style={{ padding: '8px 12px', background: 'rgba(20, 20, 40, 0.6)', fontFamily: FONT, fontSize: BASE_SIZE - 1, color: '#c0c0d0' }}>
-          {polygon.concerning && <div style={{ marginBottom: 4 }}>{polygon.concerning}</div>}
-          <div style={{ color: '#808090', fontSize: BASE_SIZE - 2 }}>{time}</div>
-          {polygon.url && (
-            <a
-              href={polygon.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#00f0ff', fontSize: BASE_SIZE - 1, textDecoration: 'none' }}
-            >
-              View Details →
-            </a>
-          )}
+        <div style={{ padding: '10px 12px', background: 'rgba(10, 10, 15, 0.6)', borderLeft: '3px solid #ff6600', fontFamily: FONT, fontSize: BASE_SIZE, color: '#c0c0d0', lineHeight: 1.5 }}>
+          {polygon.concerning && <Field label="Concerning" value={polygon.concerning} multiline />}
+          {polygon.wfo && <Field label="WFO" value={polygon.wfo} />}
+          {polygon.severity && <Field label="Severity" value={polygon.severity} />}
+          {polygon.onset && <Field label="Onset" value={formatTime(polygon.onset)} />}
+          {polygon.expires && <Field label="Expires" value={formatTime(polygon.expires)} />}
+          {polygon.areaDesc && <Field label="Areas" value={polygon.areaDesc} multiline />}
+          {polygon.description && <Field label="Discussion" value={polygon.description} multiline />}
+          {polygon.instruction && <Field label="Instructions" value={polygon.instruction} multiline />}
+          <div style={{ color: '#808090', fontSize: BASE_SIZE - 2, marginTop: 4 }}>Received: {time}</div>
         </div>
       )}
     </div>

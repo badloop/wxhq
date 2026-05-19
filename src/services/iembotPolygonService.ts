@@ -45,6 +45,14 @@ async function fetchMCDPolygon(messageHtml: string): Promise<IEMBotPolygon | nul
     const leafletCoords: [number, number][] = ring.map(([lon, lat]) => [lat, lon]);
     const concernMatch = html.match(/Concerning\.\.\.(.*)/i);
 
+    // Extract discussion text between "...DISCUSSION..." and "..ATTN.." or end of pre block
+    const discussionMatch = html.match(/\.\.\.DISCUSSION\.\.\.\s*([\s\S]*?)(?:\.\.\s*ATTN|\.\.\s*$|<\/pre>)/i);
+    const discussion = discussionMatch?.[1]?.trim().replace(/\s+/g, ' ') || '';
+
+    // Extract ATTN WFOs
+    const attnMatch = html.match(/ATTN\.\.\.(.*?)(?:<|$)/i);
+    const attn = attnMatch?.[1]?.trim() || '';
+
     return {
       id,
       coordinates: leafletCoords,
@@ -52,6 +60,8 @@ async function fetchMCDPolygon(messageHtml: string): Promise<IEMBotPolygon | nul
       concerning: concernMatch?.[1]?.trim() || '',
       url,
       timestamp: Date.now(),
+      description: discussion,
+      areaDesc: attn ? `ATTN WFOs: ${attn}` : '',
     };
   } catch (err) {
     console.error(`[wxhq] Failed to fetch MCD polygon from ${url}:`, err);
@@ -135,15 +145,23 @@ async function fetchVTECPolygon(messageHtml: string): Promise<IEMBotPolygon | nu
 
     const eventName = vtecEventNames[phenomena]?.[significance] || `${phenomena}.${significance}`;
     const label = `${wfo} ${eventName}`;
+    const props = data.features[0]?.properties || {};
 
     return {
       id,
       // Single ring: flatten for backward compat; multi-ring: keep as array of rings
       coordinates: rings.length === 1 ? rings[0] : rings,
       label,
-      concerning: data.features[0]?.properties?.headline || eventName,
+      concerning: props.headline || eventName,
       url: iemUrl,
       timestamp: Date.now(),
+      description: props.product_text || props.description || '',
+      instruction: props.instruction || '',
+      areaDesc: props.areaDesc || props.area_desc || '',
+      onset: props.onset || props.issue || '',
+      expires: props.expires || props.expire || '',
+      severity: props.severity || '',
+      wfo,
     };
   } catch (err) {
     console.error(`[wxhq] Failed to fetch VTEC polygon for ${id}:`, err);

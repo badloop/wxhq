@@ -11,6 +11,13 @@ export interface IEMBotPolygon {
   concerning: string;   // brief description
   url: string;          // source page URL
   timestamp: number;    // when added
+  description?: string; // full text body (NWS description or MCD discussion)
+  instruction?: string; // NWS instruction text
+  areaDesc?: string;    // affected areas
+  onset?: string;       // ISO onset time
+  expires?: string;     // ISO expires time
+  severity?: string;    // NWS severity level
+  wfo?: string;         // issuing WFO
 }
 
 export interface RefLayerConfig {

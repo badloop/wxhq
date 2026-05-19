@@ -90,13 +90,15 @@
     }
   ],
   "iembotRooms": [
-    "pahchat"
+    "pahchat",
+    "spcchat"
   ],
   "iembotTelegramNotify": false,
-  "iembotDesktopNotify": false,
+  "iembotDesktopNotify": true,
   "iembotLastSeqnums": {
-    "botstalk": 3235773,
-    "pahchat": 3238795
+    "botstalk": 3239961,
+    "pahchat": 3239786,
+    "spcchat": 3239782
   },
   "iembotDismissed": [],
   "animationSpeed": 200,
