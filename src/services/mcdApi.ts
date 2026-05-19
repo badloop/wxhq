@@ -47,6 +47,18 @@ export async function fetchActiveMCDs(): Promise<FeatureCollection> {
       const areasMatch = html.match(/Areas affected\.\.\.(.*)/i);
       const concernMatch = html.match(/Concerning\.\.\.(.*)/i);
 
+      // Extract discussion text
+      const discussionMatch = html.match(/DISCUSSION\.\.\.([\s\S]*?)(?:\.\.[A-Z][a-z]+\/[A-Z]|ATTN\.\.\.|LAT\.\.\.LON)/);
+      const discussion = discussionMatch?.[1]?.trim().replace(/\s+/g, ' ') || '';
+
+      // Extract ATTN WFOs
+      const attnMatch = html.match(/ATTN\.\.\.WFO\.\.\.([\s\S]*?)(?:\n\s*\n|LAT)/);
+      const attn = attnMatch?.[1]?.trim().replace(/\.\.\./g, ', ').replace(/\s+/g, ' ') || '';
+
+      // Extract peak wind/hail
+      const windMatch = html.match(/MOST PROBABLE PEAK WIND GUST\.\.\.(.*)/);
+      const hailMatch = html.match(/MOST PROBABLE PEAK HAIL SIZE\.\.\.(.*)/);
+
       features.push({
         type: 'Feature',
         properties: {
@@ -57,6 +69,10 @@ export async function fetchActiveMCDs(): Promise<FeatureCollection> {
           valid_end: validMatch?.[2] || '',
           areas: areasMatch?.[1]?.trim() || '',
           concerning: concernMatch?.[1]?.trim() || '',
+          discussion,
+          attn_wfos: attn,
+          peak_wind: windMatch?.[1]?.trim() || '',
+          peak_hail: hailMatch?.[1]?.trim() || '',
           stroke: '#4444ff',
           fill: '#4444ff',
         },

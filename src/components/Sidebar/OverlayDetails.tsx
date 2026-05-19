@@ -245,20 +245,12 @@ function MCDDetail({ feature, color }: { feature: GeoJSON.Feature; color: string
           lineHeight: 1.5,
         }}>
           <Field label="Valid" value={`${p.valid_start} - ${p.valid_end}`} />
-          {p.areas && <Field label="Areas" value={stripHtml(p.areas)} multiline />}
           {p.concerning && <Field label="Concerning" value={stripHtml(p.concerning)} multiline />}
-          {p.url && (
-            <div style={{ marginTop: 6 }}>
-              <a
-                href={p.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#00f0ff', fontFamily: FONT, fontSize: BASE_SIZE }}
-              >
-                View Full Discussion
-              </a>
-            </div>
-          )}
+          {p.areas && <Field label="Areas" value={stripHtml(p.areas)} multiline />}
+          {p.peak_wind && <Field label="Peak Wind" value={p.peak_wind} />}
+          {p.peak_hail && <Field label="Peak Hail" value={p.peak_hail} />}
+          {p.attn_wfos && <Field label="WFOs" value={p.attn_wfos} />}
+          {p.discussion && <Field label="Discussion" value={p.discussion} multiline />}
         </div>
       )}
     </div>
@@ -305,18 +297,6 @@ function WatchDetail({ feature, color }: { feature: GeoJSON.Feature; color: stri
           {p.headline && <Field label="Headline" value={stripHtml(p.headline)} multiline />}
           <Field label="Watch #" value={p.etn ? String(parseInt(p.etn, 10)) : ''} />
           <Field label="Type" value={p.phenomena === 'TO' ? 'Tornado' : p.phenomena === 'SV' ? 'Severe Thunderstorm' : p.phenomena || ''} />
-          {p.url && (
-            <div style={{ marginTop: 6 }}>
-              <a
-                href={p.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#00f0ff', fontFamily: FONT, fontSize: BASE_SIZE }}
-              >
-                View Watch Details
-              </a>
-            </div>
-          )}
         </div>
       )}
     </div>

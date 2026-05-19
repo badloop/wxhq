@@ -45,13 +45,20 @@ async function fetchMCDPolygon(messageHtml: string): Promise<IEMBotPolygon | nul
     const leafletCoords: [number, number][] = ring.map(([lon, lat]) => [lat, lon]);
     const concernMatch = html.match(/Concerning\.\.\.(.*)/i);
 
-    // Extract discussion text between "...DISCUSSION..." and "..ATTN.." or end of pre block
-    const discussionMatch = html.match(/\.\.\.DISCUSSION\.\.\.\s*([\s\S]*?)(?:\.\.\s*ATTN|\.\.\s*$|<\/pre>)/i);
+    // Extract discussion text between "DISCUSSION..." and "..Forecaster" or "ATTN" or "LAT...LON"
+    const discussionMatch = html.match(/DISCUSSION\.\.\.([\s\S]*?)(?:\.\.[A-Z][a-z]+\/[A-Z]|ATTN\.\.\.|LAT\.\.\.LON)/);
     const discussion = discussionMatch?.[1]?.trim().replace(/\s+/g, ' ') || '';
 
     // Extract ATTN WFOs
-    const attnMatch = html.match(/ATTN\.\.\.(.*?)(?:<|$)/i);
-    const attn = attnMatch?.[1]?.trim() || '';
+    const attnMatch = html.match(/ATTN\.\.\.WFO\.\.\.(.*?)(?:\n\n|LAT)/s);
+    const attn = attnMatch?.[1]?.trim().replace(/\.\.\./g, ', ').replace(/\s+/g, ' ') || '';
+
+    // Extract peak wind/hail
+    const windMatch = html.match(/MOST PROBABLE PEAK WIND GUST\.\.\.(.*)/);
+    const hailMatch = html.match(/MOST PROBABLE PEAK HAIL SIZE\.\.\.(.*)/);
+    const extras: string[] = [];
+    if (windMatch) extras.push(`Wind: ${windMatch[1].trim()}`);
+    if (hailMatch) extras.push(`Hail: ${hailMatch[1].trim()}`);
 
     return {
       id,
@@ -60,8 +67,8 @@ async function fetchMCDPolygon(messageHtml: string): Promise<IEMBotPolygon | nul
       concerning: concernMatch?.[1]?.trim() || '',
       url,
       timestamp: Date.now(),
-      description: discussion,
-      areaDesc: attn ? `ATTN WFOs: ${attn}` : '',
+      description: discussion + (extras.length ? `\n\n${extras.join(' | ')}` : ''),
+      areaDesc: attn ? `WFOs: ${attn}` : '',
     };
   } catch (err) {
     console.error(`[wxhq] Failed to fetch MCD polygon from ${url}:`, err);
