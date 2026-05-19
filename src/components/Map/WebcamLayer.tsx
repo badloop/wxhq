@@ -186,73 +186,41 @@ export function WebcamLayer() {
           maxWidth: fullscreen ? '95vw' : '500px',
           maxHeight: fullscreen ? '95vh' : '400px',
           borderRadius: fullscreen ? 0 : 6,
-          overflow: 'hidden',
+          overflow: 'visible',
           boxShadow: fullscreen ? undefined : '0 0 30px rgba(0, 240, 255, 0.3), 0 4px 20px rgba(0,0,0,0.8)',
           border: fullscreen ? undefined : '1px solid rgba(0, 240, 255, 0.2)',
           background: '#0a0a0f',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        {/* Spinner */}
-        {loading && (
-          <div style={{
-            position: 'absolute', inset: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1,
-          }}>
-            <div style={{
-              width: 32, height: 32,
-              border: '3px solid rgba(0, 240, 255, 0.2)',
-              borderTop: '3px solid #00f0ff',
-              borderRadius: '50%',
-              animation: 'webcam-spin 0.8s linear infinite',
-            }} />
-            <style>{`@keyframes webcam-spin { to { transform: rotate(360deg); } }`}</style>
-          </div>
-        )}
-
-        {/* Image */}
-        {imgUrl && (
-          <img
-            src={imgUrl}
-            alt={cam.title}
-            onLoad={() => setImgLoaded(true)}
-            style={{
-              display: 'block',
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              opacity: imgLoaded ? 1 : 0,
-              transition: 'opacity 0.3s',
-            }}
-          />
-        )}
-
-        {/* Top overlay bar — drag handle */}
+        {/* Drag handle / title bar */}
         <div
           onMouseDown={onDragStart}
           style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
             padding: '8px 12px',
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)',
+            background: 'rgba(10, 10, 20, 0.95)',
+            borderBottom: '1px solid rgba(0, 240, 255, 0.15)',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             cursor: fullscreen ? undefined : 'grab',
+            borderRadius: fullscreen ? 0 : '6px 6px 0 0',
+            flexShrink: 0,
+            userSelect: 'none',
           }}
         >
           <div>
-            <div style={{ color: '#fff', fontSize: 13, fontWeight: 'bold', fontFamily: 'monospace', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+            <div style={{ color: '#fff', fontSize: 12, fontWeight: 'bold', fontFamily: 'monospace' }}>
               {cam.title}
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontFamily: 'monospace' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontFamily: 'monospace' }}>
               {cam.location.city}{cam.location.region ? `, ${cam.location.region}` : ''}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button
+              onMouseDown={e => e.stopPropagation()}
               onClick={() => { setActive({ ...active, fullscreen: !fullscreen }); setPos(null); }}
               style={{
                 background: 'rgba(0, 240, 255, 0.15)',
@@ -269,6 +237,7 @@ export function WebcamLayer() {
               {fullscreen ? '⊡' : '⊞'}
             </button>
             <button
+              onMouseDown={e => e.stopPropagation()}
               onClick={() => { setActive(null); setImgLoaded(false); setPos(null); }}
               style={{
                 background: 'rgba(255, 0, 100, 0.15)',
@@ -287,33 +256,71 @@ export function WebcamLayer() {
           </div>
         </div>
 
-        {/* Bottom overlay */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: '6px 12px',
-            background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}
-        >
-          <a
-            href={`https://www.windy.com/webcams/${cam.webcamId}`}
-            target="_blank"
-            rel="noopener noreferrer"
+        {/* Image area */}
+        <div style={{ position: 'relative', flex: 1, overflow: 'hidden', borderRadius: fullscreen ? 0 : '0 0 6px 6px' }}>
+          {/* Spinner */}
+          {loading && (
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 1,
+            }}>
+              <div style={{
+                width: 32, height: 32,
+                border: '3px solid rgba(0, 240, 255, 0.2)',
+                borderTop: '3px solid #00f0ff',
+                borderRadius: '50%',
+                animation: 'webcam-spin 0.8s linear infinite',
+              }} />
+              <style>{`@keyframes webcam-spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+          )}
+
+          {/* Image */}
+          {imgUrl && (
+            <img
+              src={imgUrl}
+              alt={cam.title}
+              onLoad={() => setImgLoaded(true)}
+              style={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                opacity: imgLoaded ? 1 : 0,
+                transition: 'opacity 0.3s',
+              }}
+            />
+          )}
+
+          {/* Bottom overlay */}
+          <div
             style={{
-              color: '#00f0ff',
-              fontSize: 10,
-              fontFamily: 'monospace',
-              textDecoration: 'none',
-              opacity: 0.7,
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: '6px 12px',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
+              display: 'flex',
+              justifyContent: 'flex-end',
             }}
           >
-            windy.com
-          </a>
+            <a
+              href={`https://www.windy.com/webcams/${cam.webcamId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#00f0ff',
+                fontSize: 10,
+                fontFamily: 'monospace',
+                textDecoration: 'none',
+                opacity: 0.7,
+              }}
+            >
+              windy.com
+            </a>
+          </div>
         </div>
       </div>
     </div>
