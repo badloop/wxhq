@@ -22,6 +22,7 @@ export function extractConfig(state: AppState): PersistableConfig {
     refLayers: state.refLayers,
     layout: state.layout,
     paneProducts: state.paneProducts,
+    mapView: state.mapView,
   };
 }
 

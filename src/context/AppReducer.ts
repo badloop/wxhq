@@ -45,6 +45,7 @@ export interface AppState {
   mcdPolygons: IEMBotPolygon[];
   layout: 1 | 2 | 4;
   paneProducts: RadarProductId[];
+  mapView: { center: [number, number]; zoom: number };
   tilesLoading: boolean;
 }
 
@@ -83,6 +84,7 @@ export type AppAction =
   | { type: 'SET_REF_LAYER_STYLE'; payload: { id: string; key: keyof RefLayerConfig; value: string | number | boolean } }
   | { type: 'SET_LAYOUT'; payload: 1 | 2 | 4 }
   | { type: 'SET_PANE_PRODUCT'; payload: { pane: number; product: RadarProductId } }
+  | { type: 'SET_MAP_VIEW'; payload: { center: [number, number]; zoom: number } }
   | { type: 'SET_TILES_LOADING'; payload: boolean }
   | { type: 'ADD_MCD_POLYGON'; payload: IEMBotPolygon }
   | { type: 'REMOVE_MCD_POLYGON'; payload: string };
@@ -105,6 +107,7 @@ export interface PersistableConfig {
   refLayers: Record<string, RefLayerConfig>;
   layout: 1 | 2 | 4;
   paneProducts: RadarProductId[];
+  mapView?: { center: [number, number]; zoom: number };
 }
 
 export const defaultOverlays: OverlayConfig[] = [
@@ -170,6 +173,7 @@ export const initialState: AppState = {
   mcdPolygons: [],
   layout: 1,
   paneProducts: ['N0B'],
+  mapView: { center: [39.8, -98.5], zoom: 5 },
   tilesLoading: false,
 };
 
@@ -359,6 +363,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         const validIds = RADAR_PRODUCTS.map(p => p.id) as readonly string[];
         newState.paneProducts = cfg.paneProducts.map(p => validIds.includes(p) ? p : 'N0B') as RadarProductId[];
       }
+      if (cfg.mapView) {
+        newState.mapView = cfg.mapView;
+      }
 
       return newState;
     }
@@ -384,6 +391,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       paneProducts[pane] = product;
       return { ...state, paneProducts };
     }
+    case 'SET_MAP_VIEW':
+      return { ...state, mapView: action.payload };
     case 'SET_TILES_LOADING':
       return { ...state, tilesLoading: action.payload };
     case 'ADD_MCD_POLYGON': {

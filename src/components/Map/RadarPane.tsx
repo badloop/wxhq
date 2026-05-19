@@ -44,13 +44,35 @@ const dropdownStyle: CSSProperties = {
 function PaneSyncHandler({ paneIndex }: { paneIndex: number }) {
   const map = useMap();
   const sync = useMapSync();
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
 
   // Leaflet needs to recalculate size when layout changes or on mount
   useEffect(() => {
-    const timer = setTimeout(() => map.invalidateSize(), 50);
-    return () => clearTimeout(timer);
-  }, [map, state.layout]);
+    // Use ResizeObserver for reliable resize detection
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false });
+    });
+    observer.observe(container);
+    // Also fire immediately with small delay for initial mount
+    const timer = setTimeout(() => map.invalidateSize({ animate: false }), 100);
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, [map]);
+
+  // Persist map view on moveend (only from pane 0 to avoid conflicts)
+  useEffect(() => {
+    if (paneIndex !== 0) return;
+    const onMoveEnd = () => {
+      const c = map.getCenter();
+      const z = map.getZoom();
+      dispatch({ type: 'SET_MAP_VIEW', payload: { center: [c.lat, c.lng], zoom: z } });
+    };
+    map.on('moveend', onMoveEnd);
+    return () => { map.off('moveend', onMoveEnd); };
+  }, [map, paneIndex, dispatch]);
 
   useEffect(() => {
     if (!sync) return;
@@ -71,11 +93,12 @@ function PaneSyncHandler({ paneIndex }: { paneIndex: number }) {
 }
 
 export function RadarPane({ paneIndex, radarProduct, onProductChange, showControls = true }: RadarPaneProps) {
+  const { state } = useApp();
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <MapContainer
-        center={[39.8, -98.5]}
-        zoom={5}
+        center={state.mapView.center}
+        zoom={state.mapView.zoom}
         style={{ width: '100%', height: '100%' }}
         zoomControl={false}
       >
