@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { TileLayer, useMap, Pane } from 'react-leaflet';
+import { TileLayer, useMap } from 'react-leaflet';
 import { useApp } from '../../context/AppContext';
 import { getMosaicTileUrl, MOSAIC_MINUTES_AGO } from '../../services/radarApi';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
@@ -8,18 +8,15 @@ import { TrackedTileLayer } from './TrackedTileLayer';
 
 const MOSAIC_URLS = MOSAIC_MINUTES_AGO.map(m => getMosaicTileUrl(m));
 
-function useRadarPane(zIndex: number) {
-  const map = useMap();
-  useEffect(() => {
-    const name = 'radar-pane';
-    if (!map.getPane(name)) {
-      const pane = map.createPane(name);
-      pane.style.zIndex = String(zIndex);
-    } else {
-      const pane = map.getPane(name);
-      if (pane) pane.style.zIndex = String(zIndex);
-    }
-  }, [map, zIndex]);
+function ensureRadarPane(map: ReturnType<typeof useMap>, zIndex: number) {
+  const name = 'radar-pane';
+  if (!map.getPane(name)) {
+    const pane = map.createPane(name);
+    pane.style.zIndex = String(zIndex);
+  } else {
+    const pane = map.getPane(name);
+    if (pane) pane.style.zIndex = String(zIndex);
+  }
 }
 
 export function NexradMosaic({ paneIndex = 0 }: { paneIndex?: number }) {
@@ -27,12 +24,13 @@ export function NexradMosaic({ paneIndex = 0 }: { paneIndex?: number }) {
   const { selectedSite, isAnimating, animationSpeed, currentFrame, loopDelay } = state.radarState;
   const { tilesLoading } = state;
   const refreshToken = useRadarRefresh();
+  const map = useMap();
 
   const radarGroup = state.layerGroups.find(g => g.id === 'radar');
   const radarOpacity = radarGroup?.opacity ?? 0.7;
   const radarZIndex = 400 + state.layerGroups.findIndex(g => g.id === 'radar') * 10;
 
-  useRadarPane(radarZIndex);
+  ensureRadarPane(map, radarZIndex);
 
   // Track how many layers have loaded
   const loadedCountRef = useRef(0);
@@ -71,7 +69,7 @@ export function NexradMosaic({ paneIndex = 0 }: { paneIndex?: number }) {
 
   if (isAnimating) {
     return (
-      <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
+      <>
         {MOSAIC_URLS.map((url, i) => (
           <TrackedTileLayer
             key={`mosaic-${i}`}
@@ -83,12 +81,12 @@ export function NexradMosaic({ paneIndex = 0 }: { paneIndex?: number }) {
             gpuAccelerated
           />
         ))}
-      </Pane>
+      </>
     );
   }
 
   return (
-    <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
+    <>
       <TileLayer
         url={`${getMosaicTileUrl()}?_t=${refreshToken}`}
         opacity={radarOpacity}
@@ -97,6 +95,6 @@ export function NexradMosaic({ paneIndex = 0 }: { paneIndex?: number }) {
         key={`mosaic-current-${refreshToken}`}
         pane="radar-pane"
       />
-    </Pane>
+    </>
   );
 }

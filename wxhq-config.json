@@ -96,9 +96,9 @@
   "iembotTelegramNotify": false,
   "iembotDesktopNotify": true,
   "iembotLastSeqnums": {
-    "botstalk": 3248324,
+    "botstalk": 3248861,
     "pahchat": 3248252,
-    "spcchat": 3248126
+    "spcchat": 3248539
   },
   "iembotDismissed": [],
   "animationSpeed": 200,
@@ -160,9 +160,9 @@
   ],
   "mapView": {
     "center": [
-      36.815881441097154,
-      -88.560791015625
+      39.791654835253425,
+      -98.525390625
     ],
-    "zoom": 8
+    "zoom": 5
   }
 }

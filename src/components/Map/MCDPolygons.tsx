@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { Polygon, Tooltip, Pane, useMap } from 'react-leaflet';
+import { Polygon, Tooltip, useMap } from 'react-leaflet';
 import { useApp } from '../../context/AppContext';
 import type { IEMBotPolygon } from '../../context/AppReducer';
 
@@ -20,15 +19,14 @@ export function MCDPolygons() {
   const groupIdx = layerGroups.findIndex(g => g.id === 'iembot');
   const zIndex = 400 + (groupIdx >= 0 ? groupIdx : 5) * 10;
 
-  useEffect(() => {
-    if (!map.getPane(IEMBOT_PANE)) {
-      const pane = map.createPane(IEMBOT_PANE);
-      pane.style.zIndex = String(zIndex);
-    } else {
-      const pane = map.getPane(IEMBOT_PANE);
-      if (pane) pane.style.zIndex = String(zIndex);
-    }
-  }, [map, zIndex]);
+  // Ensure pane exists (create only if missing, update zIndex)
+  if (!map.getPane(IEMBOT_PANE)) {
+    const pane = map.createPane(IEMBOT_PANE);
+    pane.style.zIndex = String(zIndex);
+  } else {
+    const pane = map.getPane(IEMBOT_PANE);
+    if (pane) pane.style.zIndex = String(zIndex);
+  }
 
   if (!iembotLayer?.enabled || mcdPolygons.length === 0) return null;
 
@@ -42,7 +40,7 @@ export function MCDPolygons() {
   };
 
   return (
-    <Pane name={IEMBOT_PANE} style={{ zIndex }}>
+    <>
       {mcdPolygons.map(mcd => {
         const tooltip = (
           <Tooltip sticky>
@@ -65,6 +63,6 @@ export function MCDPolygons() {
           </Polygon>
         );
       })}
-    </Pane>
+    </>
   );
 }

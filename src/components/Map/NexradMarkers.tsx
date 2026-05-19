@@ -1,6 +1,5 @@
 import L from 'leaflet';
-import { CircleMarker, Tooltip, Pane, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import { nexradSites } from '../../data/nexradSites';
 import { useApp } from '../../context/AppContext';
 import { fetchRadarFrames } from '../../services/radarApi';
@@ -14,12 +13,11 @@ export function NexradMarkers() {
   const selectedId = state.radarState.selectedSite?.id;
   const map = useMap();
 
-  useEffect(() => {
-    if (!map.getPane(MARKER_PANE)) {
-      const pane = map.createPane(MARKER_PANE);
-      pane.style.zIndex = String(MARKER_Z);
-    }
-  }, [map]);
+  // Ensure pane exists
+  if (!map.getPane(MARKER_PANE)) {
+    const pane = map.createPane(MARKER_PANE);
+    pane.style.zIndex = String(MARKER_Z);
+  }
 
   if (!state.refLayers.radarSites?.enabled && !selectedId) return null;
 
@@ -38,7 +36,7 @@ export function NexradMarkers() {
   };
 
   return (
-    <Pane name={MARKER_PANE} style={{ zIndex: MARKER_Z }}>
+    <>
       {nexradSites
         .filter(site => showAll || site.id === selectedId)
         .map(site => (
@@ -60,6 +58,6 @@ export function NexradMarkers() {
             </Tooltip>
           </CircleMarker>
         ))}
-    </Pane>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useRef, useCallback } from 'react';
-import { WMSTileLayer, Pane } from 'react-leaflet';
+import { WMSTileLayer } from 'react-leaflet';
 import { useApp } from '../../context/AppContext';
 import { useRadarAnimation } from '../../hooks/useRadarAnimation';
 import { useRadarRefresh } from '../../hooks/useRadarRefresh';
@@ -67,7 +67,7 @@ export function SingleSiteRadar({ productOverride, paneIndex = 0 }: SingleSiteRa
 
   if (isAnimating && frameUrls.length > 0) {
     return (
-      <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
+      <>
         {frameUrls.map((url, i) => (
           <TrackedTileLayer
             key={`ridge-${site.id}-${radarProduct}-${i}`}
@@ -80,13 +80,13 @@ export function SingleSiteRadar({ productOverride, paneIndex = 0 }: SingleSiteRa
             gpuAccelerated
           />
         ))}
-      </Pane>
+      </>
     );
   }
 
   // Live view — use NCEP OpenGeo WMS for super-resolution
   return (
-    <Pane name="radar-pane" style={{ zIndex: radarZIndex }}>
+    <>
       <WMSTileLayer
         url={getNcepWmsUrl(site.id)}
         layers={getNcepLayerName(site.id, radarProduct)}
@@ -98,6 +98,6 @@ export function SingleSiteRadar({ productOverride, paneIndex = 0 }: SingleSiteRa
         key={`ncep-wms-${site.id}-${radarProduct}-${refreshToken}`}
         pane="radar-pane"
       />
-    </Pane>
+    </>
   );
 }
