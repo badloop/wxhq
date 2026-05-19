@@ -19,7 +19,7 @@ interface Webcam {
 
 interface ActiveWebcam {
   cam: Webcam;
-  imgUrl: string;
+  imgUrl: string | null;
   fullscreen: boolean;
 }
 
@@ -30,6 +30,7 @@ export function WebcamLayer() {
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const [webcams, setWebcams] = useState<Webcam[]>([]);
   const [active, setActive] = useState<ActiveWebcam | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const fetchingRef = useRef(false);
   const lastBoundsRef = useRef<string>('');
 
@@ -109,17 +110,21 @@ export function WebcamLayer() {
       });
 
       marker.on('click', () => {
+        // Show viewer immediately with spinner
+        setImgLoaded(false);
+        setActive({ cam, imgUrl: null, fullscreen: false });
+
         fetch(`${API_BASE}/${cam.webcamId}?include=images,location`, {
           headers: { 'x-windy-api-key': API_KEY },
         })
           .then(r => r.json())
           .then(data => {
             const w = data as Webcam;
-            const imgUrl = w.images?.current?.preview || cam.images?.current?.preview;
-            setActive({ cam, imgUrl, fullscreen: false });
+            const url = w.images?.current?.preview || cam.images?.current?.preview;
+            setActive(prev => prev ? { ...prev, imgUrl: url } : null);
           })
           .catch(() => {
-            setActive({ cam, imgUrl: cam.images?.current?.preview, fullscreen: false });
+            setActive(prev => prev ? { ...prev, imgUrl: cam.images?.current?.preview } : null);
           });
       });
 
@@ -131,6 +136,7 @@ export function WebcamLayer() {
   if (!active) return null;
 
   const { cam, imgUrl, fullscreen } = active;
+  const loading = !imgUrl || !imgLoaded;
 
   return (
     <div
@@ -146,7 +152,7 @@ export function WebcamLayer() {
         alignItems: 'center',
         justifyContent: 'center',
       }}
-      onClick={() => setActive(null)}
+      onClick={() => { setActive(null); setImgLoaded(false); }}
     >
       {/* Backdrop */}
       {fullscreen && (
@@ -157,25 +163,52 @@ export function WebcamLayer() {
       <div
         style={{
           position: 'relative',
+          width: fullscreen ? '95vw' : '500px',
+          height: fullscreen ? '95vh' : '320px',
           maxWidth: fullscreen ? '95vw' : '500px',
           maxHeight: fullscreen ? '95vh' : '400px',
           borderRadius: fullscreen ? 0 : 6,
           overflow: 'hidden',
           boxShadow: fullscreen ? undefined : '0 0 30px rgba(0, 240, 255, 0.3), 0 4px 20px rgba(0,0,0,0.8)',
           border: fullscreen ? undefined : '1px solid rgba(0, 240, 255, 0.2)',
+          background: '#0a0a0f',
         }}
         onClick={e => e.stopPropagation()}
       >
-        <img
-          src={imgUrl}
-          alt={cam.title}
-          style={{
-            display: 'block',
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-          }}
-        />
+        {/* Spinner */}
+        {loading && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1,
+          }}>
+            <div style={{
+              width: 32, height: 32,
+              border: '3px solid rgba(0, 240, 255, 0.2)',
+              borderTop: '3px solid #00f0ff',
+              borderRadius: '50%',
+              animation: 'webcam-spin 0.8s linear infinite',
+            }} />
+            <style>{`@keyframes webcam-spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+
+        {/* Image */}
+        {imgUrl && (
+          <img
+            src={imgUrl}
+            alt={cam.title}
+            onLoad={() => setImgLoaded(true)}
+            style={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              opacity: imgLoaded ? 1 : 0,
+              transition: 'opacity 0.3s',
+            }}
+          />
+        )}
 
         {/* Top overlay bar */}
         <div
@@ -217,7 +250,7 @@ export function WebcamLayer() {
               {fullscreen ? '⊡' : '⊞'}
             </button>
             <button
-              onClick={() => setActive(null)}
+              onClick={() => { setActive(null); setImgLoaded(false); }}
               style={{
                 background: 'rgba(255, 0, 100, 0.15)',
                 border: '1px solid rgba(255, 0, 100, 0.4)',
