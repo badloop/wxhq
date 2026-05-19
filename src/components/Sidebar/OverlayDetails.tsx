@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { OverlayConfig } from '../../types/overlays';
+import type { IEMBotPolygon } from '../../context/AppReducer';
 import { pointInPolygon } from '../../utils/geoUtils';
 
 interface OverlayDetailsProps {
@@ -8,6 +9,7 @@ interface OverlayDetailsProps {
   lon: number;
   overlays: OverlayConfig[];
   overlayData: Record<string, GeoJSON.FeatureCollection>;
+  mcdPolygons?: IEMBotPolygon[];
 }
 
 // Base font: 13px monospace, scales well on HiDPI
@@ -396,6 +398,59 @@ const sectionHeaderStyle: CSSProperties = {
   borderBottom: '1px solid rgba(0, 240, 255, 0.2)',
 };
 
+/** IEMBot polygon detail (MCD, VTEC warnings from IEMBot feed) */
+function IEMBotDetail({ polygon }: { polygon: IEMBotPolygon }) {
+  const [open, setOpen] = useState(false);
+  const time = new Date(polygon.timestamp).toLocaleString('en-US', {
+    timeZone: 'America/Chicago',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  });
+
+  return (
+    <div style={{ marginBottom: 8, borderRadius: 4, overflow: 'hidden' }}>
+      <div
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '8px 12px',
+          background: 'rgba(26, 26, 46, 0.8)',
+          borderLeft: '3px solid #ff6600',
+          cursor: 'pointer',
+          fontFamily: FONT,
+          fontSize: BASE_SIZE,
+          color: '#e0e0e0',
+        }}
+      >
+        <span>{polygon.label}</span>
+        <span style={{ fontSize: BASE_SIZE - 2, color: '#a0a0b0' }}>{open ? '▲' : '▼'}</span>
+      </div>
+      {open && (
+        <div style={{ padding: '8px 12px', background: 'rgba(20, 20, 40, 0.6)', fontFamily: FONT, fontSize: BASE_SIZE - 1, color: '#c0c0d0' }}>
+          {polygon.concerning && <div style={{ marginBottom: 4 }}>{polygon.concerning}</div>}
+          <div style={{ color: '#808090', fontSize: BASE_SIZE - 2 }}>{time}</div>
+          {polygon.url && (
+            <a
+              href={polygon.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#00f0ff', fontSize: BASE_SIZE - 1, textDecoration: 'none' }}
+            >
+              View Details →
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** SPC categorical risk severity order (highest index = highest severity) */
 const SPC_SEVERITY_ORDER = ['TSTM', 'MRGL', 'SLGT', 'ENH', 'MDT', 'HIGH'];
 
@@ -420,7 +475,7 @@ function filterHighestSPCSeverity(features: GeoJSON.Feature[]): GeoJSON.Feature[
   return best ? [best] : features;
 }
 
-export function OverlayDetails({ lat, lon, overlays, overlayData }: OverlayDetailsProps) {
+export function OverlayDetails({ lat, lon, overlays, overlayData, mcdPolygons }: OverlayDetailsProps) {
   const enabledOverlays = overlays.filter(o => o.enabled);
   const hits: { config: OverlayConfig; features: GeoJSON.Feature[] }[] = [];
 
@@ -435,7 +490,21 @@ export function OverlayDetails({ lat, lon, overlays, overlayData }: OverlayDetai
     if (matching.length > 0) hits.push({ config, features: matching });
   }
 
-  if (hits.length === 0) return null;
+  // Check IEMBot polygons (MCD, VTEC, etc.)
+  // IEMBot polygons store coords as [lat, lon] (Leaflet order), but pointInPolygon expects [lon, lat]
+  const matchingMcd = (mcdPolygons || []).filter(mcd => {
+    if (Array.isArray(mcd.coordinates[0]) && Array.isArray(mcd.coordinates[0][0])) {
+      // Multi-ring
+      return (mcd.coordinates as [number, number][][]).some(ring => {
+        const flipped = ring.map(([lt, ln]) => [ln, lt] as [number, number]);
+        return pointInPolygon(lat, lon, flipped);
+      });
+    }
+    const flipped = (mcd.coordinates as [number, number][]).map(([lt, ln]) => [ln, lt] as [number, number]);
+    return pointInPolygon(lat, lon, flipped);
+  });
+
+  if (hits.length === 0 && matchingMcd.length === 0) return null;
 
   return (
     <div>
@@ -465,6 +534,31 @@ export function OverlayDetails({ lat, lon, overlays, overlayData }: OverlayDetai
           ))}
         </div>
       ))}
+      {matchingMcd.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 6,
+            fontFamily: FONT,
+            fontSize: BASE_SIZE,
+          }}>
+            <span style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: '#ff6600',
+              display: 'inline-block',
+              boxShadow: '0 0 4px #ff6600',
+            }} />
+            <span style={{ color: '#e0e0e0' }}>IEMBot Alerts</span>
+          </div>
+          {matchingMcd.map(mcd => (
+            <IEMBotDetail key={mcd.id} polygon={mcd} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

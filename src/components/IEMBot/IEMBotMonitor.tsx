@@ -173,9 +173,17 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
             TG
           </button>
           <button
-            onClick={() => {
-              if (!config.desktopNotify && 'Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
+            onClick={async () => {
+              if (!config.desktopNotify && 'Notification' in window) {
+                if (Notification.permission === 'default') {
+                  const result = await Notification.requestPermission();
+                  console.log('[IEMBot] Notification permission result:', result);
+                  if (result !== 'granted') return; // don't toggle on if denied
+                }
+                if (Notification.permission === 'denied') {
+                  alert('Desktop notifications are blocked. Enable them in your browser site settings for this page.');
+                  return;
+                }
               }
               dispatch({ type: 'SET_IEMBOT_DESKTOP_NOTIFY', payload: !config.desktopNotify });
             }}

@@ -105,7 +105,7 @@ function Section({ title, defaultOpen = false, children }: { title: string; defa
 
 function LocationContext({ lat, lon }: { lat: number; lon: number }) {
   const { state } = useApp();
-  const { overlays, overlayGeoJSON } = state;
+  const { overlays, overlayGeoJSON, mcdPolygons } = state;
 
   const stationsRef = useRef<RAOBStation[]>([]);
   const [station, setStation] = useState<RAOBStation | null>(null);
@@ -197,6 +197,7 @@ function LocationContext({ lat, lon }: { lat: number; lon: number }) {
           lon={lon}
           overlays={overlays}
           overlayData={overlayGeoJSON}
+          mcdPolygons={mcdPolygons}
         />
       </SidebarErrorBoundary>
     </div>
