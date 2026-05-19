@@ -82,6 +82,11 @@
       "id": "lightning",
       "name": "Lightning",
       "opacity": 1
+    },
+    {
+      "id": "webcams",
+      "name": "Webcams",
+      "opacity": 1
     }
   ],
   "iembotRooms": [
@@ -90,8 +95,8 @@
   "iembotTelegramNotify": false,
   "iembotDesktopNotify": false,
   "iembotLastSeqnums": {
-    "botstalk": 3206794,
-    "pahchat": 3218581
+    "botstalk": 3233139,
+    "pahchat": 3230516
   },
   "iembotDismissed": [],
   "animationSpeed": 200,
@@ -134,10 +139,16 @@
       "opacity": 0.8
     },
     "lightning": {
-      "enabled": true,
+      "enabled": false,
       "color": "#ffff00",
       "weight": 0.5,
       "opacity": 0.64
+    },
+    "webcams": {
+      "enabled": true,
+      "color": "#ff9900",
+      "weight": 1,
+      "opacity": 1
     }
   },
   "layout": 1,

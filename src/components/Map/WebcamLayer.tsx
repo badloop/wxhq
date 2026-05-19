@@ -17,12 +17,19 @@ interface Webcam {
   };
 }
 
+interface ActiveWebcam {
+  cam: Webcam;
+  imgUrl: string;
+  fullscreen: boolean;
+}
+
 export function WebcamLayer() {
   const { state } = useApp();
   const cfg = state.refLayers.webcams;
   const map = useMap();
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const [webcams, setWebcams] = useState<Webcam[]>([]);
+  const [active, setActive] = useState<ActiveWebcam | null>(null);
   const fetchingRef = useRef(false);
   const lastBoundsRef = useRef<string>('');
 
@@ -41,16 +48,13 @@ export function WebcamLayer() {
 
     const bounds = map.getBounds();
     const center = bounds.getCenter();
-    // Calculate radius in km from bounds
     const ne = bounds.getNorthEast();
     const radiusKm = Math.min(Math.round(center.distanceTo(ne) / 1000), 250);
 
-    // Skip if viewport hasn't moved much
     const boundsKey = `${center.lat.toFixed(1)},${center.lng.toFixed(1)},${radiusKm}`;
     if (boundsKey === lastBoundsRef.current) return;
     lastBoundsRef.current = boundsKey;
 
-    // Don't fetch at very wide zoom (too many results, too sparse)
     if (map.getZoom() < 6) {
       layerGroupRef.current?.clearLayers();
       setWebcams([]);
@@ -79,7 +83,6 @@ export function WebcamLayer() {
       layerGroupRef.current?.clearLayers();
       return;
     }
-
     fetchWebcams();
     const onMoveEnd = () => fetchWebcams();
     map.on('moveend', onMoveEnd);
@@ -106,7 +109,6 @@ export function WebcamLayer() {
       });
 
       marker.on('click', () => {
-        // Fetch fresh image URL (they expire after 10 min)
         fetch(`${API_BASE}/${cam.webcamId}?include=images,location`, {
           headers: { 'x-windy-api-key': API_KEY },
         })
@@ -114,35 +116,154 @@ export function WebcamLayer() {
           .then(data => {
             const w = data as Webcam;
             const imgUrl = w.images?.current?.preview || cam.images?.current?.preview;
-            const popup = L.popup({ maxWidth: 420, className: 'webcam-popup' })
-              .setLatLng([cam.location.latitude, cam.location.longitude])
-              .setContent(`
-                <div style="text-align:center;">
-                  <div style="font-weight:bold;font-size:12px;margin-bottom:4px;color:#e0e0e0;">${cam.title}</div>
-                  <div style="font-size:10px;color:#999;margin-bottom:6px;">${cam.location.city || ''}, ${cam.location.region || ''}</div>
-                  <img src="${imgUrl}" style="max-width:400px;border-radius:4px;border:1px solid #333;" />
-                  <div style="margin-top:4px;font-size:10px;"><a href="https://www.windy.com/webcams/${cam.webcamId}" target="_blank" style="color:#00f0ff;">View on Windy</a></div>
-                </div>
-              `)
-              .openOn(map);
+            setActive({ cam, imgUrl, fullscreen: false });
           })
           .catch(() => {
-            // Fallback: use cached image
-            L.popup({ maxWidth: 420 })
-              .setLatLng([cam.location.latitude, cam.location.longitude])
-              .setContent(`
-                <div style="text-align:center;">
-                  <div style="font-weight:bold;font-size:12px;margin-bottom:4px;">${cam.title}</div>
-                  <img src="${cam.images?.current?.preview}" style="max-width:400px;border-radius:4px;" />
-                </div>
-              `)
-              .openOn(map);
+            setActive({ cam, imgUrl: cam.images?.current?.preview, fullscreen: false });
           });
       });
 
       marker.addTo(group);
     }
-  }, [webcams, cfg?.enabled, map]);
+  }, [webcams, cfg?.enabled]);
 
-  return null;
+  // Viewer overlay
+  if (!active) return null;
+
+  const { cam, imgUrl, fullscreen } = active;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: fullscreen ? 0 : '50%',
+        left: fullscreen ? 0 : '50%',
+        width: fullscreen ? '100vw' : undefined,
+        height: fullscreen ? '100vh' : undefined,
+        transform: fullscreen ? undefined : 'translate(-50%, -50%)',
+        zIndex: 2000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={() => setActive(null)}
+    >
+      {/* Backdrop */}
+      {fullscreen && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)' }} />
+      )}
+
+      {/* Image container */}
+      <div
+        style={{
+          position: 'relative',
+          maxWidth: fullscreen ? '95vw' : '500px',
+          maxHeight: fullscreen ? '95vh' : '400px',
+          borderRadius: fullscreen ? 0 : 6,
+          overflow: 'hidden',
+          boxShadow: fullscreen ? undefined : '0 0 30px rgba(0, 240, 255, 0.3), 0 4px 20px rgba(0,0,0,0.8)',
+          border: fullscreen ? undefined : '1px solid rgba(0, 240, 255, 0.2)',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <img
+          src={imgUrl}
+          alt={cam.title}
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+          }}
+        />
+
+        {/* Top overlay bar */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            padding: '8px 12px',
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+          }}
+        >
+          <div>
+            <div style={{ color: '#fff', fontSize: 13, fontWeight: 'bold', fontFamily: 'monospace', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+              {cam.title}
+            </div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontFamily: 'monospace' }}>
+              {cam.location.city}{cam.location.region ? `, ${cam.location.region}` : ''}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              onClick={() => setActive({ ...active, fullscreen: !fullscreen })}
+              style={{
+                background: 'rgba(0, 240, 255, 0.15)',
+                border: '1px solid rgba(0, 240, 255, 0.4)',
+                color: '#00f0ff',
+                borderRadius: 4,
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontFamily: 'monospace',
+              }}
+              title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {fullscreen ? '⊡' : '⊞'}
+            </button>
+            <button
+              onClick={() => setActive(null)}
+              style={{
+                background: 'rgba(255, 0, 100, 0.15)',
+                border: '1px solid rgba(255, 0, 100, 0.4)',
+                color: '#ff0064',
+                borderRadius: 4,
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontFamily: 'monospace',
+              }}
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '6px 12px',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <a
+            href={`https://www.windy.com/webcams/${cam.webcamId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#00f0ff',
+              fontSize: 10,
+              fontFamily: 'monospace',
+              textDecoration: 'none',
+              opacity: 0.7,
+            }}
+          >
+            windy.com
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 }
