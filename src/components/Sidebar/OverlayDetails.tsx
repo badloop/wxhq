@@ -99,11 +99,22 @@ function Field({ label, value, multiline }: { label: string; value: string; mult
   );
 }
 
+/** Derive warning polygon color from the alert event (matches map styling) */
+function warningColor(event: string | undefined, fallback: string): string {
+  const evt = (event || '').toLowerCase();
+  if (evt.includes('tornado')) return '#ff0000';
+  if (evt.includes('thunderstorm')) return '#ffff00';
+  if (evt.includes('special weather statement')) return '#d2b48c';
+  if (evt.includes('flood')) return '#00cc00';
+  return fallback;
+}
+
 /** NWS Alert detail (watches, warnings) */
-function NWSDetail({ feature, color }: { feature: GeoJSON.Feature; color: string }) {
+function NWSDetail({ feature, color: fallbackColor }: { feature: GeoJSON.Feature; color: string }) {
   const [open, setOpen] = useState(false);
   const p = feature.properties || {};
 
+  const color = warningColor(p.event, fallbackColor);
   const title = p.event || 'NWS Alert';
   const headline = p.headline ? stripHtml(p.headline) : '';
   const description = p.description ? stripHtml(p.description) : '';

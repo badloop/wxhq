@@ -70,8 +70,9 @@ function OverlayLayer({ config, groupOpacity }: { config: OverlayConfig; groupOp
     if (config.category === 'warnings' && props?.event) {
       const evt = (props.event as string).toLowerCase();
       let c = config.color;
-      if (evt.includes('tornado')) c = '#ff69b4';
-      else if (evt.includes('thunderstorm')) c = '#ff0000';
+      if (evt.includes('tornado')) c = '#ff0000';
+      else if (evt.includes('thunderstorm')) c = '#ffff00';
+      else if (evt.includes('special weather statement')) c = '#d2b48c';
       else if (evt.includes('flood')) c = '#00cc00';
       return { color: c, weight: 2, fillColor: c, fillOpacity: noFill ? 0 : 0.2 * groupOpacity, opacity: groupOpacity, fill: !noFill };
     }

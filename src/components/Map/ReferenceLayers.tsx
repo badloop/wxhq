@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 
 const GEOJSON_URLS: Record<string, string> = {
   stateLines: 'https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json',
-  countyLines: 'https://eric.clst.org/assets/wiki/uploads/Stuff/gz_2010_us_050_00_20m.json',
+  countyLines: 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json',
 };
 
 // Module-level cache so we don't refetch on HMR or re-render

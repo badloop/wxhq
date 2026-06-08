@@ -55,6 +55,25 @@ export async function loadConfig(): Promise<Partial<PersistableConfig> | null> {
 
 const MESSAGES_KEY = 'wxhq-iembot-messages';
 const POLYGONS_KEY = 'wxhq-iembot-polygons';
+const SEQNUMS_KEY = 'wxhq-iembot-seqnums';
+
+/** Save IEMBot last seqnums to localStorage for synchronous restore */
+export function saveIEMBotSeqnums(seqnums: Record<string, number>): void {
+  try {
+    localStorage.setItem(SEQNUMS_KEY, JSON.stringify(seqnums));
+  } catch {}
+}
+
+/** Load persisted IEMBot seqnums */
+export function loadIEMBotSeqnums(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(SEQNUMS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
 
 /** Save IEMBot messages to localStorage (separate from config to keep YAML lean) */
 export function saveIEMBotMessages(messages: import('../types/iembot').IEMBotMessage[]): void {

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef } from 
 import type { Dispatch } from 'react';
 import type { AppState, AppAction } from './AppReducer';
 import { appReducer, initialState } from './AppReducer';
-import { loadConfig, saveConfig, loadIEMBotMessages, saveIEMBotMessages, loadIEMBotPolygons, saveIEMBotPolygons } from '../services/configService';
+import { loadConfig, saveConfig, loadIEMBotMessages, saveIEMBotMessages, loadIEMBotPolygons, saveIEMBotPolygons, loadIEMBotSeqnums, saveIEMBotSeqnums } from '../services/configService';
 
 const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction> }>({
   state: initialState,
@@ -11,8 +11,12 @@ const AppContext = createContext<{ state: AppState; dispatch: Dispatch<AppAction
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState, () => {
-    // Sync init: restore IEMBot messages/polygons from localStorage
+    // Sync init: restore IEMBot messages/polygons/seqnums from localStorage
     let s = initialState;
+    const seqnums = loadIEMBotSeqnums();
+    if (Object.keys(seqnums).length > 0) {
+      s = { ...s, iembotLastSeqnums: seqnums };
+    }
     const msgs = loadIEMBotMessages();
     if (msgs.length > 0) {
       s = { ...s, iembotMessages: msgs.filter(m => !s.iembotDismissed.includes(m.seqnum)) };
@@ -59,15 +63,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const messagesChanged = prev.iembotMessages !== state.iembotMessages;
     const polygonsChanged = prev.mcdPolygons !== state.mcdPolygons;
+    const seqnumsChanged = prev.iembotLastSeqnums !== state.iembotLastSeqnums;
 
     prevStateRef.current = state;
 
-    // Persist messages and polygons separately (no debounce — they change infrequently)
+    // Persist messages, polygons, and seqnums separately (no debounce — they change infrequently)
     if (messagesChanged) {
       saveIEMBotMessages(state.iembotMessages);
     }
     if (polygonsChanged) {
       saveIEMBotPolygons(state.mcdPolygons);
+    }
+    if (seqnumsChanged) {
+      saveIEMBotSeqnums(state.iembotLastSeqnums);
     }
 
     if (!changed) return;

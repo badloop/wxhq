@@ -204,7 +204,18 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_CURRENT_FRAME':
       return { ...state, radarState: { ...state.radarState, currentFrame: action.payload } };
     case 'SET_ANIMATING':
-      return { ...state, radarState: { ...state.radarState, isAnimating: action.payload }, tilesLoading: action.payload };
+      return {
+        ...state,
+        radarState: {
+          ...state.radarState,
+          isAnimating: action.payload,
+          // Restart each play from the oldest frame so the loop always sweeps
+          // forward (oldest → newest) rather than resuming mid-cycle, which
+          // reads as a back-and-forth "rocking" motion.
+          currentFrame: action.payload ? 0 : state.radarState.currentFrame,
+        },
+        tilesLoading: action.payload,
+      };
     case 'SET_ANIMATION_SPEED':
       return { ...state, radarState: { ...state.radarState, animationSpeed: action.payload } };
     case 'SET_FRAME_COUNT':

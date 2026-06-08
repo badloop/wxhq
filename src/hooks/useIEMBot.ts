@@ -67,7 +67,8 @@ function sendDesktopNotification(messages: Array<{ room: string; text: string; p
     new Notification(title, {
       body: m.text.slice(0, 200),
       icon: '/lightning.svg',
-      tag: `iembot-${Date.now()}-${m.room}`,
+      // Stable tag per product/room so the OS coalesces duplicates instead of stacking
+      tag: `iembot-${m.room}-${m.productId || m.text.slice(0, 40)}`,
     });
   }
 }
@@ -101,6 +102,11 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const dismissedRef = useRef(state.iembotDismissed);
   dismissedRef.current = state.iembotDismissed;
 
+  // Keep a ref to seqnums already in the list, so the notification queue stays
+  // in sync with what the reducer actually accepts (prevents re-notifying dupes)
+  const existingSeqnumsRef = useRef<Set<number>>(new Set());
+  existingSeqnumsRef.current = new Set(state.iembotMessages.map(m => m.seqnum));
+
   const setAudioEnabled = useCallback((enabled: boolean) => {
     audioEnabledRef.current = enabled;
   }, []);
@@ -119,10 +125,16 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
         if (messages.length > 0) {
           let maxSeq = lastSeq;
           for (const msg of messages) {
-            if (msg.seqnum > maxSeq) maxSeq = msg.seqnum;
+            // Guard against missing/NaN seqnums that would stall pagination and
+            // cause the same messages to be refetched + re-notified every poll.
+            if (typeof msg.seqnum === 'number' && msg.seqnum > maxSeq) maxSeq = msg.seqnum;
 
             // Skip if already dismissed (user cleared it previously)
             if (dismissedRef.current.includes(msg.seqnum)) continue;
+
+            // Skip if already in the list — the reducer would dedupe it anyway,
+            // and notifying for it would produce a flood of duplicate alerts.
+            if (existingSeqnumsRef.current.has(msg.seqnum)) continue;
 
             const cleanedHtml = cleanMessageHtml(msg.message);
             dispatch({
@@ -138,6 +150,8 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
               },
             });
             newMessageCount++;
+            // Mark as seen so duplicates within this batch / across rooms don't re-notify
+            existingSeqnumsRef.current.add(msg.seqnum);
 
             // Fetch polygon for any message that might have geographic data
             fetchPolygonFromMessage(cleanedHtml, msg.product_id ?? '').then(poly => {

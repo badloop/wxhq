@@ -39,6 +39,7 @@ export function TrackedTileLayer({ onLoaded, gpuAccelerated, ...props }: Tracked
           container.style.willChange = 'opacity';
           container.style.transform = 'translateZ(0)';
           container.style.backfaceVisibility = 'hidden';
+          container.style.imageRendering = 'pixelated';
         }
       }
     }
@@ -52,6 +53,7 @@ export function TrackedTileLayer({ onLoaded, gpuAccelerated, ...props }: Tracked
         container.style.willChange = 'opacity';
         container.style.transform = 'translateZ(0)';
         container.style.backfaceVisibility = 'hidden';
+        container.style.imageRendering = 'pixelated';
       }
     }
   });

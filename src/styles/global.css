@@ -171,3 +171,24 @@ input[type="range"]::-moz-range-thumb {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+
+/* NEXRAD site markers: labelled rounded pills (replaces the old dot markers).
+   Neutralise Leaflet's default white div-icon box so only the inner pill shows;
+   the pill's colour is applied inline per availability (blue = up, red = down). */
+.leaflet-div-icon.wxhq-site-marker {
+  background: transparent;
+  border: 0;
+  width: auto !important;
+  height: auto !important;
+}
+.wxhq-site-marker .wxhq-site-pill {
+  display: inline-block;
+  color: #fff;
+  font: 700 10px/1 var(--font-mono, monospace);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  text-align: center;
+  padding: 3px 5px;
+  border-radius: 7px;
+  transition: transform 0.1s ease;
+}

@@ -18,6 +18,11 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
   const config = state.iembotConfig;
   const mobile = useIsMobile();
 
+  // Only show messages from currently-selected rooms. Messages from rooms that
+  // were previously selected (e.g. the default 'botstalk' firehose) persist in
+  // state, but shouldn't appear once the room is deselected.
+  const roomMessages = state.iembotMessages.filter((m) => config.rooms.includes(m.room));
+
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const panel = (e.target as HTMLElement).closest('[data-iembot-panel]') as HTMLElement;
@@ -256,7 +261,7 @@ export function IEMBotMonitor({ isConnected, setAudioEnabled }: { isConnected: b
 
       {/* Messages */}
       <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
-        <MessageList messages={state.iembotMessages} filter={filter} dispatch={dispatch} />
+        <MessageList messages={roomMessages} filter={filter} dispatch={dispatch} />
       </div>
 
       {/* Add room */}

@@ -1,6 +1,6 @@
 import { useApp } from '../../context/AppContext';
 import { RADAR_PRODUCTS } from '../../types/radar';
-import { fetchRadarFrames } from '../../services/radarApi';
+import { fetchSingleSiteFrames } from '../../services/radarApi';
 import type { RadarProductId } from '../../types/radar';
 import type { CSSProperties } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -53,10 +53,24 @@ export function AnimationControls() {
     dispatch({ type: 'SET_PANE_PRODUCT', payload: { pane: 0, product } });
     if (selectedSite) {
       try {
-        const newFrames = await fetchRadarFrames(selectedSite.id, frameCount, product);
+        const newFrames = await fetchSingleSiteFrames(selectedSite.id, frameCount, product);
         dispatch({ type: 'SET_FRAMES', payload: { frames: newFrames } });
       } catch (err) {
         console.error(`Failed to fetch ${product} frames:`, err);
+      }
+    }
+  };
+
+  // Changing the frame count refetches so the new count takes effect live
+  // (the reducer only stores the count; frames are pulled here on demand).
+  const handleFrameCountChange = async (count: number) => {
+    dispatch({ type: 'SET_FRAME_COUNT', payload: count });
+    if (selectedSite) {
+      try {
+        const newFrames = await fetchSingleSiteFrames(selectedSite.id, count, radarProduct);
+        dispatch({ type: 'SET_FRAMES', payload: { frames: newFrames } });
+      } catch (err) {
+        console.error(`Failed to refetch frames for count ${count}:`, err);
       }
     }
   };
@@ -90,7 +104,7 @@ export function AnimationControls() {
           <button style={mobileBtn} onClick={() => step(1)}>⏭</button>
 
           <select value={frameCount}
-            onChange={e => dispatch({ type: 'SET_FRAME_COUNT', payload: Number(e.target.value) })}
+            onChange={e => handleFrameCountChange(Number(e.target.value))}
             style={{ ...btn, padding: '6px 6px', fontSize: 12 }}
           >
             {frameCounts.map(n => <option key={n} value={n}>{n}f</option>)}
@@ -153,7 +167,7 @@ export function AnimationControls() {
       </label>
 
       <select value={frameCount}
-        onChange={e => dispatch({ type: 'SET_FRAME_COUNT', payload: Number(e.target.value) })}
+        onChange={e => handleFrameCountChange(Number(e.target.value))}
         style={{ ...btn, padding: '4px 8px' }}
       >
         {frameCounts.map(n => <option key={n} value={n}>{n} frames</option>)}

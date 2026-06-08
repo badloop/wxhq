@@ -4,6 +4,7 @@ import { AnimationControls } from './components/Map/AnimationControls';
 import { ContextSidebar } from './components/Sidebar/ContextSidebar';
 import { IEMBotBadge } from './components/IEMBot/IEMBotBadge';
 import { IEMBotMonitor } from './components/IEMBot/IEMBotMonitor';
+import { ErrorOverlay } from './components/ErrorOverlay';
 import { useIEMBot } from './hooks/useIEMBot';
 
 function AppInner() {
@@ -18,6 +19,7 @@ function AppInner() {
       <ContextSidebar />
       <IEMBotBadge />
       <IEMBotMonitor isConnected={isConnected} setAudioEnabled={setAudioEnabled} />
+      <ErrorOverlay />
     </div>
   );
 }
