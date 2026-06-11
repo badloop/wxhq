@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MessageList } from './MessageList';
 import { useIsMobile } from '../../hooks/useIsMobile';

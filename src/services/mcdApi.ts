@@ -90,40 +90,83 @@ export async function fetchActiveMCDs(): Promise<FeatureCollection> {
 }
 
 /**
- * Parse a LAT...LON block from SPC MCD HTML.
- * Format: "LAT...LON  38119068 38389265 ..." where each 8-digit group
- * is 4-digit lat (hundredths) + 4-digit lon (hundredths, west negative).
+ * Parse a LAT...LON block from raw NWS product text (or HTML).
+ *
+ * Handles BOTH coordinate encodings used by NWS products:
+ *
+ *   1. SPC/WPC discussions (MCD, MPD): 8-digit packed groups, e.g.
+ *        LAT...LON   44058790 44668619 ...
+ *      Each group is 4-digit lat (hundredths) + 4-digit lon (hundredths, west).
+ *
+ *   2. VTEC storm-based warnings (SVR, TOR, FFW, SMW): space-separated
+ *      4-digit tokens forming lat/lon PAIRS, e.g.
+ *        LAT...LON 3819 8820 3809 8823 ...
+ *      Each token is degrees*100; tokens alternate lat, lon (west).
+ *
+ * The block is terminated by the first line that is blank, begins an HTML
+ * tag, or starts a following section. Critically, for warnings we must stop
+ * at `TIME...MOT...LOC` — the coordinate on that line is the storm centroid,
+ * NOT part of the polygon ring — and at the `$$`/`&&` product delimiters.
+ *
+ * Returns GeoJSON-order [lon, lat] pairs, or null if no block was found.
  */
-export function parseMCDPolygon(html: string): [number, number][] | null {
-  const lines = html.split('\n');
+export function parseMCDPolygon(text: string): [number, number][] | null {
+  const lines = text.split('\n');
   let capture = false;
   const coordParts: string[] = [];
 
   for (const line of lines) {
     const stripped = line.trim();
-    if (stripped.includes('LAT...LON')) {
-      capture = true;
-      const after = stripped.split('LAT...LON')[1]?.trim();
-      if (after) coordParts.push(after);
+
+    if (!capture) {
+      if (stripped.includes('LAT...LON')) {
+        capture = true;
+        const after = stripped.split('LAT...LON')[1]?.trim();
+        if (after) coordParts.push(after);
+      }
       continue;
     }
-    if (capture) {
-      if (stripped === '' || stripped.includes('<')) break;
-      coordParts.push(stripped);
+
+    // Capturing continuation lines. Stop at any boundary marker.
+    if (
+      stripped === '' ||
+      stripped.includes('<') ||
+      stripped.startsWith('TIME...MOT...LOC') ||
+      stripped.startsWith('$$') ||
+      stripped.startsWith('&&') ||
+      /^[A-Z][A-Z. ]*\.\.\./.test(stripped) // next "SECTION..." header
+    ) {
+      break;
     }
+    coordParts.push(stripped);
   }
 
   if (coordParts.length === 0) return null;
 
-  const raw = coordParts.join(' ');
-  const allDigits = raw.replace(/\D/g, '');
+  // Tokenize into numeric groups. The presence of 8-digit groups means the
+  // packed MCD format; otherwise treat as space-separated 4-digit pairs.
+  const tokens = coordParts.join(' ').trim().split(/\s+/).filter(t => /^\d+$/.test(t));
+  if (tokens.length === 0) return null;
+
+  const isPacked = tokens.some(t => t.length >= 8);
   const pairs: [number, number][] = [];
 
-  for (let i = 0; i <= allDigits.length - 8; i += 8) {
-    const lat = parseInt(allDigits.slice(i, i + 4), 10) / 100;
-    const lon = -(parseInt(allDigits.slice(i + 4, i + 8), 10) / 100);
-    pairs.push([lon, lat]); // GeoJSON is [lon, lat]
+  if (isPacked) {
+    // 8-digit packed: lat4 + lon4 per token.
+    for (const tok of tokens) {
+      if (tok.length < 8) continue;
+      const lat = parseInt(tok.slice(0, 4), 10) / 100;
+      const lon = -(parseInt(tok.slice(4, 8), 10) / 100);
+      pairs.push([lon, lat]); // GeoJSON [lon, lat]
+    }
+  } else {
+    // Space-separated 4-digit pairs: alternating lat, lon.
+    for (let i = 0; i + 1 < tokens.length; i += 2) {
+      const lat = parseInt(tokens[i], 10) / 100;
+      const lon = -(parseInt(tokens[i + 1], 10) / 100);
+      pairs.push([lon, lat]); // GeoJSON [lon, lat]
+    }
   }
 
-  return pairs;
+  return pairs.length ? pairs : null;
 }

@@ -44,7 +44,7 @@ const dropdownStyle: CSSProperties = {
 function PaneSyncHandler({ paneIndex }: { paneIndex: number }) {
   const map = useMap();
   const sync = useMapSync();
-  const { state, dispatch } = useApp();
+  const { dispatch } = useApp();
 
   // Leaflet needs to recalculate size when layout changes or on mount
   useEffect(() => {

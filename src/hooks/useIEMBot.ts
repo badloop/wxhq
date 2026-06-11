@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchIEMBotMessages, cleanMessageHtml } from '../services/iembotApi';
-import { fetchPolygonFromMessage } from '../services/iembotPolygonService';
+import { fetchPolygonFromMessage, polygonIdForMessage } from '../services/iembotPolygonService';
+
+/**
+ * Max polygon-fetch attempts per message before giving up. Brand-new products
+ * occasionally lag the IEMBot relay by a few seconds; retrying across poll
+ * cycles lets the shape appear as soon as the source text is published, while
+ * the cap prevents endless refetching of products that genuinely have no
+ * polygon (e.g. text-only statements).
+ */
+const MAX_POLYGON_ATTEMPTS = 8;
 
 /** Synthesize a short notification beep via Web Audio API */
 function playNotificationSound() {
@@ -90,7 +99,6 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const seqnumRef = useRef<Record<string, number>>({});
   const [isConnected, setIsConnected] = useState(false);
   const seededRef = useRef(false);
-  const mcdScannedRef = useRef(false);
 
   const audioEnabledRef = useRef(true);
   const telegramEnabledRef = useRef(state.iembotConfig.telegramNotify);
@@ -107,9 +115,65 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
   const existingSeqnumsRef = useRef<Set<number>>(new Set());
   existingSeqnumsRef.current = new Set(state.iembotMessages.map(m => m.seqnum));
 
+  // Per-message polygon-fetch attempt counter. Bounds retries across polls.
+  const polygonAttemptsRef = useRef<Map<number, number>>(new Map());
+  // Seqnums with a polygon fetch currently in flight (avoid concurrent dupes).
+  const polygonInFlightRef = useRef<Set<number>>(new Set());
+  // Polygon ids we've already dispatched, to dedupe across the async gap between
+  // a successful fetch and the next render reflecting it in state.mcdPolygons.
+  const addedPolygonIdsRef = useRef<Set<string>>(new Set());
+
   const setAudioEnabled = useCallback((enabled: boolean) => {
     audioEnabledRef.current = enabled;
   }, []);
+
+  /**
+   * Ensure a shape exists for one message. Idempotent and self-throttling:
+   * skips if a polygon for this message is already rendered/dispatched, already
+   * in flight, or attempts are exhausted. Safe to call every poll per message.
+   * `renderedIds` is the set of polygon ids currently in state (passed in so we
+   * never read a ref during render).
+   */
+  const ensurePolygon = useCallback(
+    async (seqnum: number, messageHtml: string, productId: string, renderedIds: Set<string>) => {
+      const polyId = polygonIdForMessage(messageHtml, productId);
+      if (!polyId) return; // no drawable product
+      if (renderedIds.has(polyId) || addedPolygonIdsRef.current.has(polyId)) return; // already have it
+      if (polygonInFlightRef.current.has(seqnum)) return; // already fetching
+
+      const attempts = polygonAttemptsRef.current.get(seqnum) ?? 0;
+      if (attempts >= MAX_POLYGON_ATTEMPTS) return; // gave up
+
+      polygonInFlightRef.current.add(seqnum);
+      polygonAttemptsRef.current.set(seqnum, attempts + 1);
+      try {
+        const poly = await fetchPolygonFromMessage(messageHtml, productId);
+        if (poly && !addedPolygonIdsRef.current.has(poly.id)) {
+          addedPolygonIdsRef.current.add(poly.id);
+          dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
+        }
+      } catch {
+        // swallow — next poll's sweep retries until the attempt cap
+      } finally {
+        polygonInFlightRef.current.delete(seqnum);
+      }
+    },
+    [dispatch],
+  );
+
+  /**
+   * Re-attempt polygon fetches for every undismissed message that still lacks a
+   * shape. Run at the end of each poll so a brand-new alert whose source text
+   * lagged the relay gets its shape within a poll cycle (not the 2-min overlay
+   * refresh), and a transient network error self-heals.
+   */
+  const sweepPolygons = useCallback(() => {
+    const renderedIds = new Set(state.mcdPolygons.map(p => p.id));
+    for (const m of state.iembotMessages) {
+      if (dismissedRef.current.includes(m.seqnum)) continue;
+      ensurePolygon(m.seqnum, m.message, m.productId, renderedIds);
+    }
+  }, [state.iembotMessages, ensurePolygon]);
 
   const poll = useCallback(async () => {
     let anySuccess = false;
@@ -153,10 +217,11 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
             // Mark as seen so duplicates within this batch / across rooms don't re-notify
             existingSeqnumsRef.current.add(msg.seqnum);
 
-            // Fetch polygon for any message that might have geographic data
-            fetchPolygonFromMessage(cleanedHtml, msg.product_id ?? '').then(poly => {
-              if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
-            });
+            // Translate the alert's coordinate data into a map shape. First
+            // attempt fires now; the end-of-poll sweep retries if the source
+            // text isn't published yet. (A new message has no rendered polygon
+            // yet, so pass an empty rendered-id set; dedupe guards handle races.)
+            ensurePolygon(msg.seqnum, cleanedHtml, msg.product_id ?? '', new Set());
 
             // Only queue for notifications if message arrived AFTER boot
             const msgTime = parseIEMTimestamp(msg.ts);
@@ -194,7 +259,11 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
       console.log(`[IEMBot] Desktop notify triggered, ${telegramQueue.length} msg(s), permission=${Notification?.permission}`);
       sendDesktopNotification(telegramQueue);
     }
-  }, [rooms, dispatch]);
+
+    // Retry shapes for any undismissed message still missing one. Cheap: skips
+    // messages already drawn, in flight, or past the attempt cap.
+    sweepPolygons();
+  }, [rooms, dispatch, ensurePolygon, sweepPolygons]);
 
   useEffect(() => {
     if (rooms.length === 0) return;
@@ -210,32 +279,6 @@ export function useIEMBot(rooms: string[], pollInterval = 10000) {
 
     poll();
     const id = setInterval(poll, pollInterval);
-
-    // One-time: scan persisted messages for polygons not yet fetched
-    if (!mcdScannedRef.current) {
-      mcdScannedRef.current = true;
-      const existingIds = new Set(state.mcdPolygons.map(p => p.id));
-      const unfetched = state.iembotMessages.filter(m => {
-        // Skip if polygon already persisted
-        const msgHtml = m.message;
-        const pid = m.productId;
-        // Quick ID extraction without fetching
-        if (pid.includes('SWOMCD')) {
-          const md = msgHtml.match(/md(\d+)\.html/);
-          return md ? !existingIds.has(`mcd-${md[1]}`) : false;
-        }
-        const vt = msgHtml.match(/\/vtec\/f\/\d{4}-O-\w+-K(\w{3})-(\w{2})-(\w)-(\d{4})/);
-        return vt ? !existingIds.has(`vtec-${vt[1]}-${vt[2]}-${vt[3]}-${vt[4]}`) : false;
-      });
-      if (unfetched.length > 0) {
-        console.log(`[wxhq] Polygon scan: ${unfetched.length} messages need polygons`);
-        for (const msg of unfetched) {
-          fetchPolygonFromMessage(msg.message, msg.productId).then(poly => {
-            if (poly) dispatch({ type: 'ADD_MCD_POLYGON', payload: poly });
-          }).catch(() => {});
-        }
-      }
-    }
 
     return () => clearInterval(id);
   }, [rooms.join(','), pollInterval, poll]);
