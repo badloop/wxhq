@@ -49,8 +49,8 @@ export interface AppState {
   paneProducts: RadarProductId[];
   mapView: { center: [number, number]; zoom: number };
   tilesLoading: boolean;
-  /** Enabled SPC mesoanalysis products (CAPE, shear, …) for the contour layer.
-   *  Multiple may be on at once; they render stacked in catalog order. */
+  /** Enabled SPC mesoanalysis products (CAPE, SRH, shear, …) shown as raster
+   *  overlays. Multiple may be on at once; they stack in catalog order. */
   mesoProducts: MesoProductId[];
 }
 

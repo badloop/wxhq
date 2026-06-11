@@ -226,42 +226,25 @@ function MesoanalysisContent() {
     <div>
       {MESO_PRODUCTS.map(product => {
         const on = enabledSet.has(product.id);
-        // Mid-band color as the swatch so each kind is visually distinguishable.
-        const swatch = product.colors[Math.floor(product.colors.length / 2)];
         return (
-          <div key={product.id} style={{ marginBottom: 6, paddingLeft: 20 }}>
+          <div key={product.id} style={{ paddingLeft: 20 }}>
             <label style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              color: '#e0e0e0', fontSize: 12, cursor: 'pointer',
+              color: '#e0e0e0', fontSize: 12, cursor: 'pointer', marginBottom: 3,
             }} title={product.description}>
               <input
                 type="checkbox" checked={on}
                 onChange={() => dispatch({ type: 'TOGGLE_MESO_PRODUCT', payload: product.id })}
-                style={{ accentColor: swatch }}
+                style={{ accentColor: '#39ff14' }}
               />
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: swatch, display: 'inline-block', flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{product.name}</span>
-              <span style={{ color: '#606070', fontSize: 9 }}>{product.units}</span>
             </label>
-
-            {on && (
-              <div style={{ paddingLeft: 20, marginTop: 3 }}>
-                {/* Color-band legend (ascending thresholds). */}
-                <div style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
-                  {product.thresholds.map((t, i) => (
-                    <div key={t} style={{ flex: 1, textAlign: 'center' }}>
-                      <div style={{ height: 7, background: product.colors[i] }} />
-                      <div style={{ color: '#808090', fontSize: 8, marginTop: 1 }}>{t}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         );
       })}
-      <div style={{ color: '#606070', fontSize: 9, paddingLeft: 20, marginTop: 2 }}>
-        Open-Meteo (GFS) · hourly · contoured
+      <div style={{ color: '#606070', fontSize: 9, paddingLeft: 20, marginTop: 4 }}>
+        SPC mesoanalysis · CONUS · hourly. Color scales baked into each image;
+        stacking multiple obscures lower layers.
       </div>
     </div>
   );
