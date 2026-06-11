@@ -34,6 +34,11 @@
   "customOverlays": [],
   "layerGroups": [
     {
+      "id": "mesoanalysis",
+      "name": "SPC Mesoanalysis",
+      "opacity": 0.5
+    },
+    {
       "id": "spc",
       "name": "SPC Outlooks",
       "opacity": 1
@@ -96,9 +101,9 @@
   "iembotTelegramNotify": false,
   "iembotDesktopNotify": true,
   "iembotLastSeqnums": {
-    "botstalk": 4007712,
-    "pahchat": 4010922,
-    "spcchat": 4011040
+    "botstalk": 4014067,
+    "pahchat": 4013884,
+    "spcchat": 4014021
   },
   "iembotDismissed": [],
   "animationSpeed": 200,
@@ -151,6 +156,12 @@
       "color": "#ff9900",
       "weight": 1,
       "opacity": 1
+    },
+    "mesoanalysis": {
+      "enabled": false,
+      "color": "#d6391f",
+      "weight": 1,
+      "opacity": 1
     }
   },
   "layout": 1,
@@ -159,9 +170,10 @@
   ],
   "mapView": {
     "center": [
-      37.640334898059486,
-      -85.25390625000001
+      39.57605638518604,
+      -89.615478515625
     ],
-    "zoom": 6
-  }
+    "zoom": 7
+  },
+  "mesoProduct": "sbcape"
 }

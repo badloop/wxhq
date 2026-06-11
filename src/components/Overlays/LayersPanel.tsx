@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CustomOverlayInput } from './CustomOverlayInput';
 import { MapPointInput, MapPointList } from '../Map/MapPointInput';
+import { MESO_PRODUCTS, getMesoProduct } from '../../types/mesoanalysis';
 import type { LayerGroup } from '../../types/overlays';
 
 const sliderStyle: CSSProperties = {
@@ -217,6 +218,68 @@ function PointsContent() {
   );
 }
 
+function MesoanalysisContent() {
+  const { state, dispatch } = useApp();
+  const cfg = state.refLayers.mesoanalysis;
+  if (!cfg) return null;
+
+  const product = getMesoProduct(state.mesoProduct);
+
+  return (
+    <div style={{ paddingLeft: 20 }}>
+      <label style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        color: '#e0e0e0', fontSize: 12, cursor: 'pointer', marginBottom: 4,
+      }}>
+        <input
+          type="checkbox" checked={cfg.enabled}
+          onChange={() => dispatch({ type: 'TOGGLE_REF_LAYER', payload: 'mesoanalysis' })}
+          style={{ accentColor: '#d6391f' }}
+        />
+        Enabled
+      </label>
+
+      {cfg.enabled && (
+        <>
+          <select
+            value={state.mesoProduct}
+            onChange={e => dispatch({ type: 'SET_MESO_PRODUCT', payload: e.target.value })}
+            style={{
+              width: '100%', marginBottom: 6,
+              background: 'rgba(26,26,46,0.85)',
+              border: '1px solid rgba(0,240,255,0.3)',
+              color: '#00f0ff', fontSize: 11, fontFamily: 'monospace',
+              padding: '3px 6px', borderRadius: 3, cursor: 'pointer',
+            }}
+            title={product.description}
+          >
+            {MESO_PRODUCTS.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
+          <div style={{ color: '#808090', fontSize: 10, marginBottom: 4 }}>
+            {product.description}
+          </div>
+
+          {/* Color-band legend (ascending thresholds). */}
+          <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, marginBottom: 2 }}>
+            {product.thresholds.map((t, i) => (
+              <div key={t} style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ height: 8, background: product.colors[i] }} />
+                <div style={{ color: '#808090', fontSize: 8, marginTop: 1 }}>{t}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ color: '#606070', fontSize: 9, textAlign: 'right' }}>
+            {product.units} · Open-Meteo (GFS) · hourly
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Layers panel content — rendered inside the unified sidebar */
 export function LayersPanel() {
   const { state, dispatch } = useApp();
@@ -250,6 +313,14 @@ export function LayersPanel() {
           return (
             <LayerGroupRow key={group.id} group={group} isFirst={isFirst} isLast={isLast}>
               <IEMBotContent />
+            </LayerGroupRow>
+          );
+        }
+
+        if (group.id === 'mesoanalysis') {
+          return (
+            <LayerGroupRow key={group.id} group={group} isFirst={isFirst} isLast={isLast}>
+              <MesoanalysisContent />
             </LayerGroupRow>
           );
         }

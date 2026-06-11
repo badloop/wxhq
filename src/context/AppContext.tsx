@@ -56,6 +56,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.layout !== state.layout ||
       prev.paneProducts !== state.paneProducts ||
       prev.mapView !== state.mapView ||
+      prev.mesoProduct !== state.mesoProduct ||
       prev.radarState.animationSpeed !== state.radarState.animationSpeed ||
       prev.radarState.frameCount !== state.radarState.frameCount ||
       prev.radarState.radarProduct !== state.radarState.radarProduct ||

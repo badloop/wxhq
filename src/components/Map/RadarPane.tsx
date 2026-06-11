@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { NexradMarkers } from './NexradMarkers';
 import { NexradMosaic } from './NexradMosaic';
 import { SingleSiteRadar } from './SingleSiteRadar';
+import { MesoanalysisLayer } from './MesoanalysisLayer';
 import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
@@ -108,6 +109,7 @@ export function RadarPane({ paneIndex, radarProduct, onProductChange, showContro
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           maxZoom={19}
         />
+        <MesoanalysisLayer />
         <NexradMosaic paneIndex={paneIndex} />
         <SingleSiteRadar productOverride={radarProduct} paneIndex={paneIndex} />
         <ReferenceLayers />
