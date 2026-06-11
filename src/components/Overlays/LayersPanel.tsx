@@ -3,7 +3,7 @@ import type { CSSProperties } from 'react';
 import { useApp } from '../../context/AppContext';
 import { CustomOverlayInput } from './CustomOverlayInput';
 import { MapPointInput, MapPointList } from '../Map/MapPointInput';
-import { MESO_PRODUCTS, getMesoProduct } from '../../types/mesoanalysis';
+import { MESO_PRODUCTS } from '../../types/mesoanalysis';
 import type { LayerGroup } from '../../types/overlays';
 
 const sliderStyle: CSSProperties = {
@@ -220,62 +220,49 @@ function PointsContent() {
 
 function MesoanalysisContent() {
   const { state, dispatch } = useApp();
-  const cfg = state.refLayers.mesoanalysis;
-  if (!cfg) return null;
-
-  const product = getMesoProduct(state.mesoProduct);
+  const enabledSet = new Set(state.mesoProducts);
 
   return (
-    <div style={{ paddingLeft: 20 }}>
-      <label style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        color: '#e0e0e0', fontSize: 12, cursor: 'pointer', marginBottom: 4,
-      }}>
-        <input
-          type="checkbox" checked={cfg.enabled}
-          onChange={() => dispatch({ type: 'TOGGLE_REF_LAYER', payload: 'mesoanalysis' })}
-          style={{ accentColor: '#d6391f' }}
-        />
-        Enabled
-      </label>
+    <div>
+      {MESO_PRODUCTS.map(product => {
+        const on = enabledSet.has(product.id);
+        // Mid-band color as the swatch so each kind is visually distinguishable.
+        const swatch = product.colors[Math.floor(product.colors.length / 2)];
+        return (
+          <div key={product.id} style={{ marginBottom: 6, paddingLeft: 20 }}>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: '#e0e0e0', fontSize: 12, cursor: 'pointer',
+            }} title={product.description}>
+              <input
+                type="checkbox" checked={on}
+                onChange={() => dispatch({ type: 'TOGGLE_MESO_PRODUCT', payload: product.id })}
+                style={{ accentColor: swatch }}
+              />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: swatch, display: 'inline-block', flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{product.name}</span>
+              <span style={{ color: '#606070', fontSize: 9 }}>{product.units}</span>
+            </label>
 
-      {cfg.enabled && (
-        <>
-          <select
-            value={state.mesoProduct}
-            onChange={e => dispatch({ type: 'SET_MESO_PRODUCT', payload: e.target.value })}
-            style={{
-              width: '100%', marginBottom: 6,
-              background: 'rgba(26,26,46,0.85)',
-              border: '1px solid rgba(0,240,255,0.3)',
-              color: '#00f0ff', fontSize: 11, fontFamily: 'monospace',
-              padding: '3px 6px', borderRadius: 3, cursor: 'pointer',
-            }}
-            title={product.description}
-          >
-            {MESO_PRODUCTS.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-
-          <div style={{ color: '#808090', fontSize: 10, marginBottom: 4 }}>
-            {product.description}
-          </div>
-
-          {/* Color-band legend (ascending thresholds). */}
-          <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, marginBottom: 2 }}>
-            {product.thresholds.map((t, i) => (
-              <div key={t} style={{ flex: 1, textAlign: 'center' }}>
-                <div style={{ height: 8, background: product.colors[i] }} />
-                <div style={{ color: '#808090', fontSize: 8, marginTop: 1 }}>{t}</div>
+            {on && (
+              <div style={{ paddingLeft: 20, marginTop: 3 }}>
+                {/* Color-band legend (ascending thresholds). */}
+                <div style={{ display: 'flex', alignItems: 'stretch', gap: 0 }}>
+                  {product.thresholds.map((t, i) => (
+                    <div key={t} style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{ height: 7, background: product.colors[i] }} />
+                      <div style={{ color: '#808090', fontSize: 8, marginTop: 1 }}>{t}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
-          <div style={{ color: '#606070', fontSize: 9, textAlign: 'right' }}>
-            {product.units} · Open-Meteo (GFS) · hourly
-          </div>
-        </>
-      )}
+        );
+      })}
+      <div style={{ color: '#606070', fontSize: 9, paddingLeft: 20, marginTop: 2 }}>
+        Open-Meteo (GFS) · hourly · contoured
+      </div>
     </div>
   );
 }

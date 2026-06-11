@@ -32,12 +32,24 @@ const MAX_POINTS_PER_REQUEST = 950;
 const BOUNDS = { latMin: 24.5, latMax: 50.0, lonMin: -125.0, lonMax: -66.5 };
 
 /**
- * Mesh resolution. ~0.6° spacing → 960 points, one POST, ~1.5 s. This is a
- * synoptic/meso-alpha view (comparable to SPC's coarser fields), not a 3 km
- * rendering — fine for the contoured overlay and keeps us within rate limits.
+ * Mesh resolution. 24×39 = 936 points fits in a single POST (cap 1000),
+ * ~0.65° spacing, ~1.5 s. This is a synoptic/meso-alpha view (comparable to
+ * SPC's coarser fields), not a 3 km rendering — fine for the contoured overlay
+ * and keeps each product to one request to respect the rate limit.
  */
 const GRID_NLAT = 24;
-const GRID_NLON = 40;
+const GRID_NLON = 39;
+
+/** Thrown when Open-Meteo returns HTTP 429 so callers can back off globally. */
+class RateLimitError extends Error {
+  constructor() {
+    super('Open-Meteo rate limit (429)');
+    this.name = 'RateLimitError';
+  }
+}
+
+/** After a 429 we stop issuing requests for this long and serve stale cache. */
+const RATE_LIMIT_COOLDOWN_MS = 5 * 60 * 1000;
 
 export interface MesoField {
   productId: string;
@@ -95,6 +107,10 @@ async function fetchBatch(
     headers: { 'Content-Type': 'application/json' },
     body,
   });
+  if (res.status === 429) {
+    // Rate limited — signal the caller to back off (handled in fetchMesoField).
+    throw new RateLimitError();
+  }
   if (!res.ok) throw new Error(`Open-Meteo ${res.status} ${res.statusText}`);
 
   const json = (await res.json()) as OpenMeteoPoint[] | { error: boolean; reason: string };
@@ -122,10 +138,11 @@ function nearestHourIndex(times: string[]): number {
 }
 
 /**
- * Fetch and contour one mesoanalysis product into styled GeoJSON.
+ * Build (fetch + contour) one mesoanalysis product into styled GeoJSON.
  * Returns null if the field could not be built (network error, empty data).
+ * This is the uncached worker; callers should use {@link fetchMesoField}.
  */
-export async function fetchMesoField(productId: string): Promise<MesoField | null> {
+async function buildMesoField(productId: string): Promise<MesoField | null> {
   const product = getMesoProduct(productId);
   const { lats, lons } = buildAxes();
 
@@ -139,36 +156,104 @@ export async function fetchMesoField(productId: string): Promise<MesoField | nul
     }
   }
 
-  try {
-    // Tile the request to stay under the per-POST cap, preserving order.
-    const latChunks = chunk(flatLat, MAX_POINTS_PER_REQUEST);
-    const lonChunks = chunk(flatLon, MAX_POINTS_PER_REQUEST);
-    const batches = await Promise.all(
-      latChunks.map((lc, idx) => fetchBatch(lc, lonChunks[idx], product.variables)),
-    );
-    const points = batches.flat();
+  // Tile the request to stay under the per-POST cap, preserving order.
+  const latChunks = chunk(flatLat, MAX_POINTS_PER_REQUEST);
+  const lonChunks = chunk(flatLon, MAX_POINTS_PER_REQUEST);
+  const batches = await Promise.all(
+    latChunks.map((lc, idx) => fetchBatch(lc, lonChunks[idx], product.variables)),
+  );
+  const points = batches.flat();
 
-    if (points.length === 0 || !points[0]?.hourly?.time?.length) {
-      return null;
-    }
-
-    const hourIdx = nearestHourIndex(points[0].hourly.time);
-    const validTime = `${points[0].hourly.time[hourIdx]}:00Z`;
-
-    // Reduce each point to the product scalar, in mesh order.
-    const values = buildValueGrid(points, product, hourIdx);
-
-    const geojson = contourToGeoJSON(values, lats, lons, product);
-    return { productId, validTime, geojson };
-  } catch (err) {
-    reportError({
-      source: 'Open-Meteo',
-      message: 'Mesoanalysis fetch failed',
-      detail: `${product.name} — ${err instanceof Error ? err.message : String(err)}`,
-      severity: 'warning',
-    });
+  if (points.length === 0 || !points[0]?.hourly?.time?.length) {
     return null;
   }
+
+  const hourIdx = nearestHourIndex(points[0].hourly.time);
+  const validTime = `${points[0].hourly.time[hourIdx]}:00Z`;
+
+  // Reduce each point to the product scalar, in mesh order.
+  const values = buildValueGrid(points, product, hourIdx);
+
+  const geojson = contourToGeoJSON(values, lats, lons, product);
+  return { productId, validTime, geojson };
+}
+
+interface CacheEntry {
+  /** The model hour key (UTC, e.g. "2026-06-11T18") this field is valid for. */
+  hourKey: string;
+  field: MesoField;
+}
+
+/** Cached fields per product, plus in-flight promises for dedup. */
+const fieldCache = new Map<string, CacheEntry>();
+const inFlight = new Map<string, Promise<MesoField | null>>();
+/** Epoch ms until which we suppress requests after a 429. */
+let cooldownUntil = 0;
+
+/** Current model-hour bucket key in UTC (data refreshes hourly). */
+function currentHourKey(): string {
+  return new Date().toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
+}
+
+/**
+ * Public entry point: fetch + contour a mesoanalysis product, with caching and
+ * rate-limit protection. Open-Meteo throttles aggressively, so:
+ *
+ *   - Results are cached for the current UTC hour. A second request within the
+ *     same hour (another pane, a toggle, the 30-min refresh) is served from
+ *     cache with no network call.
+ *   - Concurrent requests for the same product share one in-flight promise, so
+ *     N panes mounting at once issue a single POST, not N.
+ *   - On HTTP 429 we enter a cooldown and serve any stale cached field rather
+ *     than hammering the API.
+ *
+ * Returns null only when there is no cache and the network attempt failed.
+ */
+export async function fetchMesoField(productId: string): Promise<MesoField | null> {
+  const hourKey = currentHourKey();
+  const cached = fieldCache.get(productId);
+
+  // Fresh cache for this hour — no network needed.
+  if (cached && cached.hourKey === hourKey) return cached.field;
+
+  // Within a rate-limit cooldown: serve stale cache (if any) instead of calling.
+  if (Date.now() < cooldownUntil) return cached?.field ?? null;
+
+  // Coalesce concurrent callers onto one request.
+  const existing = inFlight.get(productId);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    try {
+      const field = await buildMesoField(productId);
+      if (field) fieldCache.set(productId, { hourKey, field });
+      return field ?? cached?.field ?? null;
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        cooldownUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+        reportError({
+          source: 'Open-Meteo',
+          message: 'Mesoanalysis rate-limited; pausing updates',
+          detail: `Backing off ${RATE_LIMIT_COOLDOWN_MS / 60000} min. Serving last data if available.`,
+          severity: 'warning',
+        });
+      } else {
+        reportError({
+          source: 'Open-Meteo',
+          message: 'Mesoanalysis fetch failed',
+          detail: `${getMesoProduct(productId).name} — ${err instanceof Error ? err.message : String(err)}`,
+          severity: 'warning',
+        });
+      }
+      // Fall back to stale cache on any failure.
+      return cached?.field ?? null;
+    } finally {
+      inFlight.delete(productId);
+    }
+  })();
+
+  inFlight.set(productId, promise);
+  return promise;
 }
 
 /** Reduce the per-point variable arrays at `hourIdx` to a flat scalar grid. */

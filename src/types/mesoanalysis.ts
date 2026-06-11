@@ -161,8 +161,6 @@ export const MESO_PRODUCTS: MesoProduct[] = [
 
 export type MesoProductId = (typeof MESO_PRODUCTS)[number]['id'];
 
-export const DEFAULT_MESO_PRODUCT: MesoProductId = 'sbcape';
-
 /** Look up a product by id, falling back to the default. */
 export function getMesoProduct(id: string): MesoProduct {
   return MESO_PRODUCTS.find((p) => p.id === id) ?? MESO_PRODUCTS[0];

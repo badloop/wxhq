@@ -34,11 +34,6 @@
   "customOverlays": [],
   "layerGroups": [
     {
-      "id": "mesoanalysis",
-      "name": "SPC Mesoanalysis",
-      "opacity": 0.5
-    },
-    {
       "id": "spc",
       "name": "SPC Outlooks",
       "opacity": 1
@@ -92,6 +87,11 @@
       "id": "webcams",
       "name": "Webcams",
       "opacity": 1
+    },
+    {
+      "id": "mesoanalysis",
+      "name": "SPC Mesoanalysis",
+      "opacity": 0.17
     }
   ],
   "iembotRooms": [
@@ -101,9 +101,9 @@
   "iembotTelegramNotify": false,
   "iembotDesktopNotify": true,
   "iembotLastSeqnums": {
-    "botstalk": 4014067,
+    "botstalk": 4014264,
     "pahchat": 4013884,
-    "spcchat": 4014021
+    "spcchat": 4014195
   },
   "iembotDismissed": [],
   "animationSpeed": 200,
@@ -170,10 +170,12 @@
   ],
   "mapView": {
     "center": [
-      39.57605638518604,
-      -89.615478515625
+      39.38950933076637,
+      -90.7635498046875
     ],
     "zoom": 7
   },
-  "mesoProduct": "sbcape"
+  "mesoProducts": [
+    "sbcape"
+  ]
 }

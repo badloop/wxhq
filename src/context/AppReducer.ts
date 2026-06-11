@@ -1,7 +1,7 @@
 import type { NexradSite, RadarState, RadarProductId } from '../types/radar';
 import { RADAR_PRODUCTS } from '../types/radar';
 import type { MesoProductId } from '../types/mesoanalysis';
-import { MESO_PRODUCTS, DEFAULT_MESO_PRODUCT } from '../types/mesoanalysis';
+import { MESO_PRODUCTS } from '../types/mesoanalysis';
 import type { OverlayConfig, LayerGroup } from '../types/overlays';
 import type { IEMBotMessage, IEMBotConfig } from '../types/iembot';
 import type { MapPoint } from '../types/mapPoints';
@@ -49,8 +49,9 @@ export interface AppState {
   paneProducts: RadarProductId[];
   mapView: { center: [number, number]; zoom: number };
   tilesLoading: boolean;
-  /** Selected SPC mesoanalysis product (CAPE, shear, …) for the contour layer. */
-  mesoProduct: MesoProductId;
+  /** Enabled SPC mesoanalysis products (CAPE, shear, …) for the contour layer.
+   *  Multiple may be on at once; they render stacked in catalog order. */
+  mesoProducts: MesoProductId[];
 }
 
 export type AppAction =
@@ -92,7 +93,7 @@ export type AppAction =
   | { type: 'SET_TILES_LOADING'; payload: boolean }
   | { type: 'ADD_MCD_POLYGON'; payload: IEMBotPolygon }
   | { type: 'REMOVE_MCD_POLYGON'; payload: string }
-  | { type: 'SET_MESO_PRODUCT'; payload: MesoProductId };
+  | { type: 'TOGGLE_MESO_PRODUCT'; payload: MesoProductId };
 
 /** The subset of state that gets persisted to YAML */
 export interface PersistableConfig {
@@ -113,7 +114,7 @@ export interface PersistableConfig {
   layout: 1 | 2 | 4;
   paneProducts: RadarProductId[];
   mapView?: { center: [number, number]; zoom: number };
-  mesoProduct?: MesoProductId;
+  mesoProducts?: MesoProductId[];
 }
 
 export const defaultOverlays: OverlayConfig[] = [
@@ -176,16 +177,13 @@ export const initialState: AppState = {
     iembot: { enabled: true, color: '#ffaa00', weight: 2, opacity: 0.8 },
     lightning: { enabled: true, color: '#ffff00', weight: 1, opacity: 0.9 },
     webcams: { enabled: false, color: '#ff9900', weight: 1, opacity: 1 },
-    // Mesoanalysis uses only the `enabled` flag (color/weight unused — bands are
-    // colored by the product's own ramp); opacity comes from the layer group.
-    mesoanalysis: { enabled: false, color: '#d6391f', weight: 1, opacity: 1 },
   },
   mcdPolygons: [],
   layout: 1,
   paneProducts: ['N0B'],
   mapView: { center: [39.8, -98.5], zoom: 5 },
   tilesLoading: false,
-  mesoProduct: DEFAULT_MESO_PRODUCT,
+  mesoProducts: [],
 };
 
 /** Extract the polygon ID that would have been generated for this message */
@@ -390,11 +388,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       if (cfg.mapView) {
         newState.mapView = cfg.mapView;
       }
-      if (cfg.mesoProduct) {
-        const validMeso = MESO_PRODUCTS.map(p => p.id) as readonly string[];
-        if (validMeso.includes(cfg.mesoProduct)) {
-          newState.mesoProduct = cfg.mesoProduct;
-        }
+      if (cfg.mesoProducts) {
+        const validMeso = new Set(MESO_PRODUCTS.map(p => p.id) as readonly string[]);
+        newState.mesoProducts = cfg.mesoProducts.filter(id => validMeso.has(id));
       }
 
       return newState;
@@ -432,8 +428,15 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     }
     case 'REMOVE_MCD_POLYGON':
       return { ...state, mcdPolygons: state.mcdPolygons.filter(p => p.id !== action.payload) };
-    case 'SET_MESO_PRODUCT':
-      return { ...state, mesoProduct: action.payload };
+    case 'TOGGLE_MESO_PRODUCT': {
+      const on = state.mesoProducts.includes(action.payload);
+      return {
+        ...state,
+        mesoProducts: on
+          ? state.mesoProducts.filter(id => id !== action.payload)
+          : [...state.mesoProducts, action.payload],
+      };
+    }
     default:
       return state;
   }
