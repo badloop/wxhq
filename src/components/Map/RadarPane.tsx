@@ -4,6 +4,7 @@ import { NexradMarkers } from './NexradMarkers';
 import { NexradMosaic } from './NexradMosaic';
 import { SingleSiteRadar } from './SingleSiteRadar';
 import { MesoanalysisLayer } from './MesoanalysisLayer';
+import { RadarSitesToggle } from './RadarSitesToggle';
 import { OverlayLayers } from '../Overlays/OverlayLayers';
 import { ReferenceLayers } from './ReferenceLayers';
 import { MapPoints } from './MapPoints';
@@ -121,11 +122,14 @@ export function RadarPane({ paneIndex, radarProduct, onProductChange, showContro
         <NexradMarkers />
         <MapClickHandler />
       </MapContainer>
+      {/* On-map radar-sites quick toggle, pane 0 only. */}
+      {paneIndex === 0 && <RadarSitesToggle />}
       {showControls && (
         <select
           value={radarProduct}
           onChange={e => onProductChange(e.target.value as RadarProductId)}
-          style={dropdownStyle}
+          // Shift right of the sites toggle on pane 0 so they don't overlap.
+          style={{ ...dropdownStyle, left: paneIndex === 0 ? 88 : 8 }}
           title={`Pane ${paneIndex + 1} product`}
         >
           {RADAR_PRODUCTS.map(p => (
